@@ -1,10 +1,10 @@
 {
   "name": "graphitab",
-  "description": "GraphiQL in a Tab",
-  "private": true,
   "version": "0.1.0",
-  "author": "Jason Simeone",
+  "private": true,
+  "description": "GraphiQL in a Tab",
   "license": "MIT",
+  "author": "Jason Simeone",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -14,7 +14,7 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
-    "format": "prettier --write .",
+    "format": "oxfmt --write .",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
@@ -31,14 +31,8 @@
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/auto-icons": "^1.1.0",
     "@wxt-dev/module-react": "^1.1.5",
-    "prettier": "^3.8.1",
+    "oxfmt": "^0.28.0",
     "typescript": "^5.9.3",
     "wxt": "^0.20.14"
-  },
-  "prettier": {
-    "semi": false,
-    "singleQuote": true,
-    "tabWidth": 2,
-    "trailingComma": "es5"
   }
 }
