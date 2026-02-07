@@ -1,17 +1,32 @@
 import { explorerPlugin } from '@graphiql/plugin-explorer'
 import { createGraphiQLFetcher } from '@graphiql/toolkit'
+import type { GraphiQLPlugin } from '@graphiql/react'
 import { GraphiQL } from 'graphiql'
 import qs from 'qs'
 import { useState, useEffect } from 'react'
 
 import { get as getProfile, type Profile } from '~/utils/profiles'
-import { createGraphiQLStorage } from '~/utils/storage'
+import { createSavedQueriesStorage } from '@/utils/queries_storage'
+import { createGraphiQLSettingsStorage } from '~/utils/settings_storage'
+
+import SavedQueriesContent from './SavedQueriesContent'
+import SavedQueriesIcon from './SavedQueriesIcon'
 
 import './App.css'
 import 'graphiql/style.css'
 import '@graphiql/plugin-explorer/style.css'
 
 const APP_TITLE = 'GraphiTab'
+
+export function createSavedQueriesPlugin(profileId: string): GraphiQLPlugin {
+  const storage = createSavedQueriesStorage(profileId)
+
+  return {
+    title: 'Saved Queries',
+    icon: SavedQueriesIcon,
+    content: () => <SavedQueriesContent storage={storage} />,
+  }
+}
 
 export default function () {
   const query = qs.parse(document.location.search.slice(1))
@@ -48,15 +63,16 @@ export default function () {
       url: profile.url,
     })
 
-    const storage = createGraphiQLStorage(profile.id)
+    const settingsStorage = createGraphiQLSettingsStorage(profile.id)
 
     const plugins = [
       explorerPlugin({
         showAttribution: false,
       }),
+      createSavedQueriesPlugin(profile.id),
     ]
 
-    elem = <GraphiQL fetcher={fetcher} storage={storage} plugins={plugins} />
+    elem = <GraphiQL fetcher={fetcher} storage={settingsStorage} plugins={plugins} />
   }
 
   return elem
