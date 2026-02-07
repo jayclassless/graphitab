@@ -15,6 +15,7 @@
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
     "format": "oxfmt --write .",
+    "lint": "oxlint",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
@@ -32,6 +33,7 @@
     "@wxt-dev/auto-icons": "^1.1.0",
     "@wxt-dev/module-react": "^1.1.5",
     "oxfmt": "^0.28.0",
+    "oxlint": "^1.43.0",
     "typescript": "^5.9.3",
     "wxt": "^0.20.14"
   }
