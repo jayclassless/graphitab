@@ -1,17 +1,17 @@
+import type { GraphiQLPlugin } from '@graphiql/react'
+
 import { explorerPlugin } from '@graphiql/plugin-explorer'
 import { createGraphiQLFetcher } from '@graphiql/toolkit'
-import type { GraphiQLPlugin } from '@graphiql/react'
 import { GraphiQL } from 'graphiql'
 import qs from 'qs'
 import { useState, useEffect } from 'react'
 
 import { get as getProfile, type Profile } from '~/utils/profiles'
-import { createSavedQueriesStorage } from '@/utils/queries_storage'
+import { createSavedQueriesStorage } from '~/utils/queries_storage'
 import { createGraphiQLSettingsStorage } from '~/utils/settings_storage'
 
 import SavedQueriesContent from './SavedQueriesContent'
 import SavedQueriesIcon from './SavedQueriesIcon'
-
 import './App.css'
 import 'graphiql/style.css'
 import '@graphiql/plugin-explorer/style.css'

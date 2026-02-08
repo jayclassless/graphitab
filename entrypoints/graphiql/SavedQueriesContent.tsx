@@ -6,7 +6,7 @@ import {
 } from '@graphiql/react'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 
-import { SavedQuery, SavedQueriesStorage } from '@/utils/queries_storage'
+import { SavedQuery, SavedQueriesStorage } from '~/utils/queries_storage'
 
 import './SavedQueriesContent.css'
 
