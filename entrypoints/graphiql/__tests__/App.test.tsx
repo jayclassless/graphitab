@@ -87,12 +87,12 @@ describe('GraphiQL App', () => {
     expect(screen.queryByTestId('graphiql')).not.toBeInTheDocument()
   })
 
-  it('renders nothing when profile is not found', async () => {
+  it('shows error message when profile is not found', async () => {
     window.history.pushState({}, '', '?profile=nonexistent')
     mockGetProfile.mockResolvedValue(undefined)
     render(<App />)
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
+      expect(screen.getByText('Profile not found')).toBeInTheDocument()
     })
     expect(screen.queryByTestId('graphiql')).not.toBeInTheDocument()
   })

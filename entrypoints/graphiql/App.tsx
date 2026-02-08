@@ -54,7 +54,7 @@ export default function () {
   }, [profile])
 
   if (loading) {
-    return <div className="graphiqltab-root">Loading...</div>
+    return <div className="graphiql-container graphiqltab-root">Loading...</div>
   }
 
   let elem
@@ -73,6 +73,8 @@ export default function () {
     ]
 
     elem = <GraphiQL fetcher={fetcher} storage={settingsStorage} plugins={plugins} />
+  } else {
+    elem = <div className="graphiql-container graphiqltab-root">Profile not found</div>
   }
 
   return elem
