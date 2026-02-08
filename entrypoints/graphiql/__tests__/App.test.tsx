@@ -29,8 +29,12 @@ vi.mock('~/utils/settings_storage', () => ({
   createGraphiQLSettingsStorage: mockCreateSettingsStorage,
 }))
 
+const mockGraphiQL = vi.hoisted(() =>
+  vi.fn(() => <div data-testid="graphiql">GraphiQL</div>)
+)
+
 vi.mock('graphiql', () => ({
-  GraphiQL: () => <div data-testid="graphiql">GraphiQL</div>,
+  GraphiQL: mockGraphiQL,
 }))
 
 vi.mock('@graphiql/plugin-explorer', () => ({
@@ -139,6 +143,16 @@ describe('GraphiQL App', () => {
     render(<App />)
     await waitFor(() => {
       expect(mockCreateSettingsStorage).toHaveBeenCalledWith('test-id')
+    })
+  })
+
+  it('passes saved queries plugin to GraphiQL', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+    render(<App />)
+    await waitFor(() => {
+      const plugins = mockGraphiQL.mock.calls[0][0].plugins
+      expect(plugins).toContainEqual(expect.objectContaining({ title: 'Saved Queries' }))
     })
   })
 })
