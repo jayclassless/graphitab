@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid'
+
 import { storage } from '#imports'
 
 export type Profile = {
@@ -32,4 +34,21 @@ export async function getAll(): Promise<Profile[]> {
 
 export async function get(id: string): Promise<Profile | undefined> {
   return (await getAll()).find((p) => p.id === id)
+}
+
+export async function remove(id: string): Promise<void> {
+  const profiles = (await getAll()).filter((p) => p.id !== id)
+  await profilesStorageItem.setValue(profiles)
+}
+
+export async function create(name: string, url: string): Promise<Profile> {
+  const profiles = await getAll()
+  const profile: Profile = {
+    id: uuid(),
+    name,
+    url,
+  }
+  profiles.push(profile)
+  await profilesStorageItem.setValue(profiles)
+  return profile
 }
