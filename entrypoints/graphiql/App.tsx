@@ -28,7 +28,7 @@ export function createSavedQueriesPlugin(profileId: string): GraphiQLPlugin {
   }
 }
 
-export default function () {
+export default function App() {
   const query = qs.parse(document.location.search.slice(1))
 
   const [profile, setProfile] = useState<Profile | undefined>(undefined)
@@ -57,25 +57,22 @@ export default function () {
     return <div className="graphiql-container graphiqltab-root">Loading...</div>
   }
 
-  let elem
-  if (profile) {
-    const fetcher = createGraphiQLFetcher({
-      url: profile.url,
-    })
-
-    const settingsStorage = createGraphiQLSettingsStorage(profile.id)
-
-    const plugins = [
-      explorerPlugin({
-        showAttribution: false,
-      }),
-      createSavedQueriesPlugin(profile.id),
-    ]
-
-    elem = <GraphiQL fetcher={fetcher} storage={settingsStorage} plugins={plugins} />
-  } else {
-    elem = <div className="graphiql-container graphiqltab-root">Profile not found</div>
+  if (!profile) {
+    return <div className="graphiql-container graphiqltab-root">Profile not found</div>
   }
 
-  return elem
+  const fetcher = createGraphiQLFetcher({
+    url: profile.url,
+  })
+
+  const settingsStorage = createGraphiQLSettingsStorage(profile.id)
+
+  const plugins = [
+    explorerPlugin({
+      showAttribution: false,
+    }),
+    createSavedQueriesPlugin(profile.id),
+  ]
+
+  return <GraphiQL fetcher={fetcher} storage={settingsStorage} plugins={plugins} />
 }

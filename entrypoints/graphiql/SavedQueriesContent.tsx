@@ -13,7 +13,7 @@ import './SavedQueriesContent.css'
 type SortField = 'name' | 'createdAt'
 type SortDirection = 'asc' | 'desc'
 
-export default function ({ storage }: { storage: SavedQueriesStorage }) {
+export default function SavedQueriesContent({ storage }: { storage: SavedQueriesStorage }) {
   const [operationsString, handleEditOperations] = useOptimisticState(useOperationsEditorState())
   const [variablesString, handleEditVariables] = useOptimisticState(useVariablesEditorState())
   const [headersString, handleEditHeaders] = useOptimisticState(useHeadersEditorState())
@@ -48,7 +48,7 @@ export default function ({ storage }: { storage: SavedQueriesStorage }) {
   }, [loadQueries])
 
   const handleSave = async () => {
-    let name = queryName.trim()
+    const name = queryName.trim()
     if (!name || !operationsString) return
 
     await storage.create(name, operationsString, variablesString, headersString)
@@ -132,6 +132,7 @@ export default function ({ storage }: { storage: SavedQueriesStorage }) {
                   className="saved-queries-item-delete"
                   onClick={() => handleDelete(saved.id)}
                   title="Delete"
+                  aria-label="Delete"
                 >
                   ×
                 </button>
@@ -155,6 +156,7 @@ export default function ({ storage }: { storage: SavedQueriesStorage }) {
             className="saved-queries-sort-direction"
             onClick={() => setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))}
             title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            aria-label={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
           >
             {sortDirection === 'asc' ? '\u2191' : '\u2193'}
           </button>

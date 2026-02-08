@@ -6,6 +6,8 @@ import * as profiles from '~/utils/profiles'
 import './App.css'
 import 'graphiql/style.css'
 
+const GRAPHIQL_PATH = '/graphiql.html'
+
 function isValidUrl(value: string): boolean {
   try {
     const parsed = new URL(value)
@@ -15,7 +17,7 @@ function isValidUrl(value: string): boolean {
   }
 }
 
-export default function () {
+export default function App() {
   const [allProfiles, setAllProfiles] = useState<profiles.Profile[]>([])
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
@@ -75,7 +77,11 @@ export default function () {
             const params = qs.stringify({ profile: profile.id })
             return (
               <div key={profile.id} className="popup-profile-item">
-                <a className="popup-profile-link" href={`/graphiql.html?${params}`} target="_blank">
+                <a
+                  className="popup-profile-link"
+                  href={`${GRAPHIQL_PATH}?${params}`}
+                  target="_blank"
+                >
                   {profile.name}
                 </a>
                 {confirmDeleteId === profile.id ? (
@@ -92,6 +98,7 @@ export default function () {
                     className="popup-delete-btn"
                     onClick={() => handleDelete(profile.id)}
                     title="Delete"
+                    aria-label="Delete"
                   >
                     ×
                   </button>
