@@ -37,7 +37,7 @@ export function createGraphiQLSettingsStorage(namespace: string): GraphiQLStorag
     },
 
     clear: () => {
-      for (const key in getAllKeys(makeKey(''))) {
+      for (const key of getAllKeys(makeKey(''))) {
         localStorage.removeItem(key)
       }
     },

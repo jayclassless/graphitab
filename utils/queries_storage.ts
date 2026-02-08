@@ -51,7 +51,7 @@ export function createSavedQueriesStorage(profileId: string): SavedQueriesStorag
     },
 
     async save(query: SavedQuery): Promise<SavedQuery[]> {
-      const queries = await this.getAll()
+      const queries = [...(await this.getAll())]
 
       let found = false
       for (let i = 0; i < queries.length; i++) {

@@ -16,6 +16,8 @@
     "compile": "tsc --noEmit",
     "format": "oxfmt --write .",
     "lint": "oxlint",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
@@ -29,14 +31,20 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/qs": "^6.14.0",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.0.18",
     "@wxt-dev/auto-icons": "^1.1.0",
     "@wxt-dev/module-react": "^1.1.5",
+    "jsdom": "^28.0.0",
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
     "wxt": "^0.20.14"
   }
 }
