@@ -21,6 +21,12 @@ body {
   margin-bottom: var(--px-4);
 }
 
+.popup-error {
+  color: hsl(var(--color-error));
+  font-size: var(--font-size-body);
+  padding: var(--px-4) var(--px-8);
+}
+
 .popup-list {
   display: flex;
   flex-direction: column;

@@ -228,4 +228,64 @@ describe('Popup App', () => {
       expect(mockTabsRemove).not.toHaveBeenCalled()
     })
   })
+
+  describe('error handling', () => {
+    it('shows error when loading profiles fails', async () => {
+      mockGetAll.mockRejectedValue(new Error('storage error'))
+      render(<App />)
+      await waitFor(() => {
+        expect(screen.getByText('Failed to load profiles')).toBeInTheDocument()
+      })
+    })
+
+    it('shows error when creating a profile fails', async () => {
+      const { user } = await renderApp()
+      mockCreate.mockRejectedValue(new Error('storage error'))
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Test')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      await user.click(screen.getByText('Add'))
+      await waitFor(() => {
+        expect(screen.getByText('Failed to create profile')).toBeInTheDocument()
+      })
+    })
+
+    it('shows error when deleting a profile fails', async () => {
+      mockRemove.mockRejectedValue(new Error('storage error'))
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Delete')[0])
+      await user.click(screen.getByText('Confirm'))
+      await waitFor(() => {
+        expect(screen.getByText('Failed to delete profile')).toBeInTheDocument()
+      })
+    })
+
+    it('clears error on next successful action', async () => {
+      const { user } = await renderApp()
+      mockCreate.mockRejectedValueOnce(new Error('storage error'))
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Test')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      await user.click(screen.getByText('Add'))
+      await waitFor(() => {
+        expect(screen.getByText('Failed to create profile')).toBeInTheDocument()
+      })
+      // Retry — create succeeds this time, error clears at start of action
+      await user.type(screen.getByPlaceholderText('Name'), 'Test')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      await user.click(screen.getByText('Add'))
+      await waitFor(() => {
+        expect(screen.queryByText('Failed to create profile')).not.toBeInTheDocument()
+      })
+    })
+  })
 })

@@ -25,6 +25,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [error, setError] = useState<string | null>(null)
 
   const sortedQueries = useMemo(() => {
     return [...savedQueries].sort((a, b) => {
@@ -39,8 +40,12 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
   }, [savedQueries, sortField, sortDirection])
 
   const loadQueries = useCallback(async () => {
-    const queries = await storage.getAll()
-    setSavedQueries(queries)
+    try {
+      const queries = await storage.getAll()
+      setSavedQueries(queries)
+    } catch {
+      setError('Failed to load saved queries')
+    }
     setIsLoading(false)
   }, [storage])
 
@@ -51,10 +56,14 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
   const handleSave = async () => {
     const name = queryName.trim()
     if (!name || !operationsString) return
+    setError(null)
 
-    await storage.create(name, operationsString, variablesString, headersString)
-
-    setQueryName('')
+    try {
+      await storage.create(name, operationsString, variablesString, headersString)
+      setQueryName('')
+    } catch {
+      setError('Failed to save query')
+    }
     await loadQueries()
   }
 
@@ -70,7 +79,12 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
       return
     }
     setConfirmDeleteId(null)
-    await storage.remove(id)
+    setError(null)
+    try {
+      await storage.remove(id)
+    } catch {
+      setError('Failed to delete query')
+    }
     await loadQueries()
   }
 
@@ -100,6 +114,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
         </button>
       </div>
 
+      {error && <div className="saved-queries-error">{error}</div>}
       <div className="saved-queries-list">
         {savedQueries.length === 0 ? (
           <div className="gt-empty">No saved queries yet</div>

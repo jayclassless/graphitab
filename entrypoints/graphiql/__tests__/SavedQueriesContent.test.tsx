@@ -250,4 +250,55 @@ describe('SavedQueriesContent', () => {
       expect(buttons[1]).toHaveTextContent('Alpha Query')
     })
   })
+
+  describe('error handling', () => {
+    it('shows error when loading queries fails', async () => {
+      const storage = createMockStorage()
+      storage.getAll = vi.fn().mockRejectedValue(new Error('storage error'))
+      render(<SavedQueriesContent storage={storage} />)
+      await waitFor(() => {
+        expect(screen.getByText('Failed to load saved queries')).toBeInTheDocument()
+      })
+    })
+
+    it('shows error when saving a query fails', async () => {
+      const storage = createMockStorage()
+      storage.create = vi.fn().mockRejectedValue(new Error('storage error'))
+      const { user } = await renderContent(storage)
+      await user.type(screen.getByPlaceholderText('Query name...'), 'My Query')
+      await user.click(screen.getByText('Save'))
+      await waitFor(() => {
+        expect(screen.getByText('Failed to save query')).toBeInTheDocument()
+      })
+    })
+
+    it('shows error when deleting a query fails', async () => {
+      const storage = createMockStorage()
+      storage.remove = vi.fn().mockRejectedValue(new Error('storage error'))
+      const { user } = await renderContent(storage)
+      await user.click(screen.getAllByTitle('Delete')[0])
+      await user.click(screen.getByText('Confirm'))
+      await waitFor(() => {
+        expect(screen.getByText('Failed to delete query')).toBeInTheDocument()
+      })
+    })
+
+    it('clears error on next successful action', async () => {
+      const storage = createMockStorage()
+      storage.create = vi.fn().mockRejectedValueOnce(new Error('storage error'))
+      const { user } = await renderContent(storage)
+      await user.type(screen.getByPlaceholderText('Query name...'), 'My Query')
+      await user.click(screen.getByText('Save'))
+      await waitFor(() => {
+        expect(screen.getByText('Failed to save query')).toBeInTheDocument()
+      })
+      // Retry — create succeeds this time, error clears at start of action
+      storage.create = vi.fn().mockResolvedValue([])
+      await user.type(screen.getByPlaceholderText('Query name...'), 'My Query')
+      await user.click(screen.getByText('Save'))
+      await waitFor(() => {
+        expect(screen.queryByText('Failed to save query')).not.toBeInTheDocument()
+      })
+    })
+  })
 })

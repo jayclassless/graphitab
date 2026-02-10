@@ -25,6 +25,7 @@ export default function App() {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const sortedProfiles = useMemo(
     () => [...allProfiles].sort((a, b) => a.name.localeCompare(b.name)),
@@ -37,7 +38,12 @@ export default function App() {
   const canSubmit = !!trimmedName && !urlInvalid && !!trimmedUrl
 
   const loadProfiles = () => {
-    profiles.getAll().then(setAllProfiles)
+    profiles
+      .getAll()
+      .then(setAllProfiles)
+      .catch(() => {
+        setError('Failed to load profiles')
+      })
   }
 
   useEffect(() => {
@@ -56,29 +62,40 @@ export default function App() {
       return
     }
     setConfirmDeleteId(null)
+    setError(null)
 
-    const params = qs.stringify({ profile: id })
-    const matchUrl = `${browser.runtime.getURL(GRAPHIQL_PATH)}?${params}`
-    const tabs = await browser.tabs.query({ url: matchUrl })
-    if (tabs.length > 0) {
-      await browser.tabs.remove(tabs.map((t) => t.id!))
+    try {
+      const params = qs.stringify({ profile: id })
+      const matchUrl = `${browser.runtime.getURL(GRAPHIQL_PATH)}?${params}`
+      const tabs = await browser.tabs.query({ url: matchUrl })
+      if (tabs.length > 0) {
+        await browser.tabs.remove(tabs.map((t) => t.id!))
+      }
+
+      await profiles.remove(id)
+    } catch {
+      setError('Failed to delete profile')
     }
-
-    await profiles.remove(id)
     loadProfiles()
   }
 
   const handleCreate = async () => {
     if (!canSubmit) return
+    setError(null)
 
-    await profiles.create(trimmedName, trimmedUrl)
-    resetForm()
+    try {
+      await profiles.create(trimmedName, trimmedUrl)
+      resetForm()
+    } catch {
+      setError('Failed to create profile')
+    }
     loadProfiles()
   }
 
   return (
     <div className="popup graphiql-container">
       <div className="popup-title">GraphiTab</div>
+      {error && <div className="popup-error">{error}</div>}
       <div className="popup-list">
         {sortedProfiles.length === 0 ? (
           <div className="gt-empty">No profiles configured</div>
