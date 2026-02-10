@@ -25,11 +25,11 @@ export function createGraphiQLSettingsStorage(namespace: string): GraphiQLStorag
     },
 
     setItem: (key: string, value: string) => {
-      return localStorage.setItem(makeKey(key), value)
+      localStorage.setItem(makeKey(key), value)
     },
 
     removeItem: (key: string) => {
-      return localStorage.removeItem(makeKey(key))
+      localStorage.removeItem(makeKey(key))
     },
 
     get length() {
