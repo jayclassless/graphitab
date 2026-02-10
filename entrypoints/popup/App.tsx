@@ -1,4 +1,3 @@
-import qs from 'qs'
 import { useState, useEffect, useMemo } from 'react'
 import { browser } from 'wxt/browser'
 
@@ -59,7 +58,7 @@ export default function App() {
     setError(null)
 
     try {
-      const params = qs.stringify({ profile: id })
+      const params = new URLSearchParams({ profile: id }).toString()
       const matchUrl = `${browser.runtime.getURL(GRAPHIQL_PATH)}?${params}`
       const tabs = await browser.tabs.query({ url: matchUrl })
       if (tabs.length > 0) {
@@ -95,7 +94,7 @@ export default function App() {
           <div className="gt-empty">No profiles configured</div>
         ) : (
           sortedProfiles.map((profile) => {
-            const params = qs.stringify({ profile: profile.id })
+            const params = new URLSearchParams({ profile: profile.id }).toString()
             return (
               <div key={profile.id} className="popup-profile-item">
                 <a className="gt-list-item" href={`${GRAPHIQL_PATH}?${params}`} target="_blank">

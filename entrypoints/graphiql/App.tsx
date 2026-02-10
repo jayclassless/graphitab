@@ -3,7 +3,6 @@ import type { GraphiQLPlugin } from '@graphiql/react'
 import { explorerPlugin } from '@graphiql/plugin-explorer'
 import { createGraphiQLFetcher } from '@graphiql/toolkit'
 import { GraphiQL } from 'graphiql'
-import qs from 'qs'
 import { useState, useEffect, useMemo } from 'react'
 
 import { get as getProfile, type Profile } from '~/utils/profiles'
@@ -29,10 +28,10 @@ export function createSavedQueriesPlugin(profileId: string): GraphiQLPlugin {
 }
 
 export default function App() {
-  const profileId = useMemo(() => {
-    const query = qs.parse(document.location.search.slice(1))
-    return query.profile as string | undefined
-  }, [])
+  const profileId = useMemo(
+    () => new URLSearchParams(document.location.search).get('profile') ?? undefined,
+    []
+  )
 
   const [profile, setProfile] = useState<Profile | undefined>(undefined)
   const [loading, setLoading] = useState(true)
