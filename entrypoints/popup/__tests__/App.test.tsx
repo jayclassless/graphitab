@@ -20,6 +20,21 @@ vi.mock('~/utils/profiles', () => ({
   create: (name: string, url: string) => mockCreate(name, url),
 }))
 
+const mockTabsQuery = vi.fn<(queryInfo: object) => Promise<{ id: number }[]>>()
+const mockTabsRemove = vi.fn<(tabIds: number[]) => Promise<void>>()
+
+vi.mock('wxt/browser', () => ({
+  browser: {
+    runtime: {
+      getURL: (path: string) => `chrome-extension://test-id${path}`,
+    },
+    tabs: {
+      query: (...args: unknown[]) => mockTabsQuery(...args),
+      remove: (...args: unknown[]) => mockTabsRemove(...args),
+    },
+  },
+}))
+
 // Stub CSS imports
 vi.mock('../App.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
@@ -36,6 +51,8 @@ describe('Popup App', () => {
     mockGetAll.mockResolvedValue([...mockProfiles])
     mockRemove.mockResolvedValue(undefined)
     mockCreate.mockResolvedValue({ id: 'new', name: 'New', url: 'https://new.com/graphql' })
+    mockTabsQuery.mockResolvedValue([])
+    mockTabsRemove.mockResolvedValue(undefined)
   })
 
   async function renderApp() {
@@ -187,6 +204,26 @@ describe('Popup App', () => {
       await user.click(screen.getByText('Confirm'))
       expect(mockRemove).toHaveBeenCalledWith('a')
       expect(mockGetAll).toHaveBeenCalledTimes(2)
+    })
+
+    it('closes open tabs for the deleted profile', async () => {
+      mockTabsQuery.mockResolvedValue([{ id: 10 }, { id: 20 }])
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Delete')[0])
+      await user.click(screen.getByText('Confirm'))
+      expect(mockTabsQuery).toHaveBeenCalledWith({
+        url: 'chrome-extension://test-id/graphiql.html?profile=a',
+      })
+      expect(mockTabsRemove).toHaveBeenCalledWith([10, 20])
+    })
+
+    it('does not call tabs.remove when no tabs are open', async () => {
+      mockTabsQuery.mockResolvedValue([])
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Delete')[0])
+      await user.click(screen.getByText('Confirm'))
+      expect(mockTabsQuery).toHaveBeenCalled()
+      expect(mockTabsRemove).not.toHaveBeenCalled()
     })
   })
 })

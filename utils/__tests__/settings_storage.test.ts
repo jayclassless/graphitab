@@ -11,12 +11,12 @@ describe('createGraphiQLSettingsStorage', () => {
   it('namespaces keys with the given namespace', () => {
     const storage = createGraphiQLSettingsStorage('test')
     storage.setItem('editor', 'vim')
-    expect(localStorage.getItem('test:editor')).toBe('vim')
+    expect(localStorage.getItem('graphitab:test:editor')).toBe('vim')
   })
 
   describe('getItem', () => {
     it('returns the value for a namespaced key', () => {
-      localStorage.setItem('ns:key', 'value')
+      localStorage.setItem('graphitab:ns:key', 'value')
       const storage = createGraphiQLSettingsStorage('ns')
       expect(storage.getItem('key')).toBe('value')
     })
@@ -31,7 +31,7 @@ describe('createGraphiQLSettingsStorage', () => {
     it('stores the value under the namespaced key', () => {
       const storage = createGraphiQLSettingsStorage('ns')
       storage.setItem('foo', 'bar')
-      expect(localStorage.getItem('ns:foo')).toBe('bar')
+      expect(localStorage.getItem('graphitab:ns:foo')).toBe('bar')
     })
 
     it('overwrites an existing value', () => {
@@ -48,7 +48,7 @@ describe('createGraphiQLSettingsStorage', () => {
       storage.setItem('foo', 'bar')
       storage.removeItem('foo')
       expect(storage.getItem('foo')).toBeNull()
-      expect(localStorage.getItem('ns:foo')).toBeNull()
+      expect(localStorage.getItem('graphitab:ns:foo')).toBeNull()
     })
 
     it('does not throw when removing a non-existent key', () => {
@@ -64,9 +64,9 @@ describe('createGraphiQLSettingsStorage', () => {
     })
 
     it('counts only keys belonging to the namespace', () => {
-      localStorage.setItem('ns:a', '1')
-      localStorage.setItem('ns:b', '2')
-      localStorage.setItem('other:c', '3')
+      localStorage.setItem('graphitab:ns:a', '1')
+      localStorage.setItem('graphitab:ns:b', '2')
+      localStorage.setItem('graphitab:other:c', '3')
       const storage = createGraphiQLSettingsStorage('ns')
       expect(storage.length).toBe(2)
     })
@@ -74,14 +74,14 @@ describe('createGraphiQLSettingsStorage', () => {
 
   describe('clear', () => {
     it('removes only keys belonging to the namespace', () => {
-      localStorage.setItem('ns:a', '1')
-      localStorage.setItem('ns:b', '2')
-      localStorage.setItem('other:c', '3')
+      localStorage.setItem('graphitab:ns:a', '1')
+      localStorage.setItem('graphitab:ns:b', '2')
+      localStorage.setItem('graphitab:other:c', '3')
       const storage = createGraphiQLSettingsStorage('ns')
       storage.clear()
-      expect(localStorage.getItem('ns:a')).toBeNull()
-      expect(localStorage.getItem('ns:b')).toBeNull()
-      expect(localStorage.getItem('other:c')).toBe('3')
+      expect(localStorage.getItem('graphitab:ns:a')).toBeNull()
+      expect(localStorage.getItem('graphitab:ns:b')).toBeNull()
+      expect(localStorage.getItem('graphitab:other:c')).toBe('3')
     })
   })
 

@@ -16,7 +16,7 @@ function getAllKeys(prefix: string): string[] {
 // https://github.com/graphql/graphiql/blob/main/packages/graphiql-toolkit/src/storage/base.ts
 export function createGraphiQLSettingsStorage(namespace: string): GraphiQLStorage {
   const makeKey = (key: string): string => {
-    return `${namespace}:${key}`
+    return `graphitab:${namespace}:${key}`
   }
 
   return {

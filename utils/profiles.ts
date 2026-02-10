@@ -1,6 +1,9 @@
 import { storage } from '#imports'
 import { v4 as uuid } from 'uuid'
 
+import { createSavedQueriesStorage } from './queries_storage'
+import { createGraphiQLSettingsStorage } from './settings_storage'
+
 export type Profile = {
   id: string
   name: string
@@ -38,6 +41,8 @@ export async function get(id: string): Promise<Profile | undefined> {
 export async function remove(id: string): Promise<void> {
   const profiles = (await getAll()).filter((p) => p.id !== id)
   await profilesStorageItem.setValue(profiles)
+  await createSavedQueriesStorage(id).clear()
+  createGraphiQLSettingsStorage(id).clear()
 }
 
 export async function create(name: string, url: string): Promise<Profile> {

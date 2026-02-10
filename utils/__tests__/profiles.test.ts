@@ -5,6 +5,32 @@ vi.mock('uuid', () => ({
   v4: vi.fn(() => 'test-uuid'),
 }))
 
+// Mock localStorage for settings_storage (used by profiles.remove cleanup).
+// Values are stored as own enumerable properties so that `for (key in localStorage)` works.
+const localStorageMock: Storage = {
+  getItem(key: string) {
+    return Object.prototype.hasOwnProperty.call(this, key) ? (this as any)[key] : null
+  },
+  setItem(key: string, value: string) {
+    ;(this as any)[key] = value
+  },
+  removeItem(key: string) {
+    delete (this as any)[key]
+  },
+  clear() {
+    for (const key of Object.keys(this)) {
+      if (typeof (this as any)[key] === 'string') delete (this as any)[key]
+    }
+  },
+  key(_index: number) {
+    return null
+  },
+  get length() {
+    return 0
+  },
+}
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
+
 const DEFAULT_PROFILES = [
   {
     id: 'swapi',
@@ -22,6 +48,7 @@ describe('profiles', () => {
   beforeEach(() => {
     fakeBrowser.reset()
     vi.resetModules()
+    localStorage.clear()
   })
 
   async function importProfiles() {
@@ -72,6 +99,45 @@ describe('profiles', () => {
       await remove('non-existent')
       const profiles = await getAll()
       expect(profiles).toEqual(DEFAULT_PROFILES)
+    })
+
+    it('clears saved queries for the deleted profile', async () => {
+      const { createSavedQueriesStorage } = await import('../queries_storage')
+      const storage = createSavedQueriesStorage('swapi')
+      await storage.create('My Query', '{ hero { name } }')
+      expect(await storage.getAll()).toHaveLength(1)
+
+      const { remove } = await importProfiles()
+      await remove('swapi')
+      expect(await storage.getAll()).toEqual([])
+    })
+
+    it('clears settings for the deleted profile', async () => {
+      const { createGraphiQLSettingsStorage } = await import('../settings_storage')
+      const settings = createGraphiQLSettingsStorage('swapi')
+      settings.setItem('editor', 'vim')
+      expect(settings.getItem('editor')).toBe('vim')
+
+      const { remove } = await importProfiles()
+      await remove('swapi')
+      expect(settings.getItem('editor')).toBeNull()
+    })
+
+    it('does not clear data belonging to other profiles', async () => {
+      const { createSavedQueriesStorage } = await import('../queries_storage')
+      const { createGraphiQLSettingsStorage } = await import('../settings_storage')
+
+      const otherQueries = createSavedQueriesStorage('countries')
+      await otherQueries.create('Other Query', '{ countries { name } }')
+
+      const otherSettings = createGraphiQLSettingsStorage('countries')
+      otherSettings.setItem('theme', 'dark')
+
+      const { remove } = await importProfiles()
+      await remove('swapi')
+
+      expect(await otherQueries.getAll()).toHaveLength(1)
+      expect(otherSettings.getItem('theme')).toBe('dark')
     })
   })
 
