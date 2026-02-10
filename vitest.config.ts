@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
-      include: ['utils/**/*.ts', 'entrypoints/**/*.tsx'],
+      include: ['utils/**/*.ts', 'entrypoints/**/*.tsx', 'components/**/*.tsx'],
       exclude: ['**/main.tsx', '**/__tests__/**'],
     },
   },

@@ -58,66 +58,6 @@ body {
   outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
 }
 
-.popup-delete-btn {
-  all: unset;
-  padding: var(--px-4) var(--px-8);
-  border-radius: var(--border-radius-4);
-  color: hsla(var(--color-neutral), var(--alpha-secondary));
-  font-size: 16px;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.popup-delete-btn:hover {
-  background: hsla(var(--color-error), var(--alpha-background-light));
-  color: hsl(var(--color-error));
-}
-
-.popup-delete-btn:focus {
-  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
-}
-
-.popup-confirm-delete {
-  display: flex;
-  gap: var(--px-4);
-}
-
-.popup-confirm-btn,
-.popup-cancel-btn {
-  padding: var(--px-4) var(--px-8);
-  border: none;
-  border-radius: var(--border-radius-4);
-  font-size: inherit;
-  cursor: pointer;
-  line-height: var(--line-height);
-}
-
-.popup-confirm-btn {
-  background: hsla(var(--color-error), var(--alpha-background-heavy));
-  color: hsl(var(--color-error));
-}
-
-.popup-confirm-btn:hover {
-  background: hsla(var(--color-error), var(--alpha-background-medium));
-}
-
-.popup-confirm-btn:focus {
-  outline: hsla(var(--color-error), 0.8) auto 1px;
-}
-
-.popup-cancel-btn {
-  background: hsla(var(--color-neutral), var(--alpha-background-light));
-  color: hsl(var(--color-neutral));
-}
-
-.popup-cancel-btn:hover {
-  background: hsla(var(--color-neutral), var(--alpha-background-medium));
-}
-
-.popup-cancel-btn:focus {
-  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
-}
-
 .popup-empty {
   color: hsla(var(--color-neutral), var(--alpha-tertiary));
   font-style: italic;

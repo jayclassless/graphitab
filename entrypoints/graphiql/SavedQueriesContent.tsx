@@ -6,6 +6,7 @@ import {
 } from '@graphiql/react'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 
+import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import { SavedQuery, SavedQueriesStorage } from '~/utils/queries_storage'
 
 import './SavedQueriesContent.css'
@@ -112,31 +113,11 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
               >
                 {saved.name}
               </button>
-              {confirmDeleteId === saved.id ? (
-                <div className="saved-queries-confirm-delete">
-                  <button
-                    className="saved-queries-confirm-btn"
-                    onClick={() => handleDelete(saved.id)}
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    className="saved-queries-cancel-btn"
-                    onClick={() => setConfirmDeleteId(null)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button
-                  className="saved-queries-item-delete"
-                  onClick={() => handleDelete(saved.id)}
-                  title="Delete"
-                  aria-label="Delete"
-                >
-                  ×
-                </button>
-              )}
+              <ConfirmDeleteButton
+                isConfirming={confirmDeleteId === saved.id}
+                onDelete={() => handleDelete(saved.id)}
+                onCancel={() => setConfirmDeleteId(null)}
+              />
             </div>
           ))
         )}

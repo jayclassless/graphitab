@@ -38,6 +38,7 @@ vi.mock('wxt/browser', () => ({
 // Stub CSS imports
 vi.mock('../App.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
+vi.mock('~/components/ConfirmDeleteButton.css', () => ({}))
 
 import App from '../App'
 

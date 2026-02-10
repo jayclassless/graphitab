@@ -1,0 +1,59 @@
+.confirm-delete-btn {
+  all: unset;
+  padding: var(--px-4) var(--px-8);
+  border-radius: var(--border-radius-4);
+  color: hsla(var(--color-neutral), var(--alpha-secondary));
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.confirm-delete-btn:hover {
+  background: hsla(var(--color-error), var(--alpha-background-light));
+  color: hsl(var(--color-error));
+}
+
+.confirm-delete-btn:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}
+
+.confirm-delete-wrapper {
+  display: flex;
+  gap: var(--px-4);
+}
+
+.confirm-delete-confirm,
+.confirm-delete-cancel {
+  padding: var(--px-4) var(--px-8);
+  border: none;
+  border-radius: var(--border-radius-4);
+  font-size: inherit;
+  cursor: pointer;
+  line-height: var(--line-height);
+}
+
+.confirm-delete-confirm {
+  background: hsla(var(--color-error), var(--alpha-background-heavy));
+  color: hsl(var(--color-error));
+}
+
+.confirm-delete-confirm:hover {
+  background: hsla(var(--color-error), var(--alpha-background-medium));
+}
+
+.confirm-delete-confirm:focus {
+  outline: hsla(var(--color-error), 0.8) auto 1px;
+}
+
+.confirm-delete-cancel {
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+  color: hsl(var(--color-neutral));
+}
+
+.confirm-delete-cancel:hover {
+  background: hsla(var(--color-neutral), var(--alpha-background-medium));
+}
+
+.confirm-delete-cancel:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}

@@ -2,6 +2,7 @@ import qs from 'qs'
 import { useState, useEffect, useMemo } from 'react'
 import { browser } from 'wxt/browser'
 
+import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import * as profiles from '~/utils/profiles'
 
 import './App.css'
@@ -93,25 +94,11 @@ export default function App() {
                 >
                   {profile.name}
                 </a>
-                {confirmDeleteId === profile.id ? (
-                  <div className="popup-confirm-delete">
-                    <button className="popup-confirm-btn" onClick={() => handleDelete(profile.id)}>
-                      Confirm
-                    </button>
-                    <button className="popup-cancel-btn" onClick={() => setConfirmDeleteId(null)}>
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    className="popup-delete-btn"
-                    onClick={() => handleDelete(profile.id)}
-                    title="Delete"
-                    aria-label="Delete"
-                  >
-                    ×
-                  </button>
-                )}
+                <ConfirmDeleteButton
+                  isConfirming={confirmDeleteId === profile.id}
+                  onDelete={() => handleDelete(profile.id)}
+                  onCancel={() => setConfirmDeleteId(null)}
+                />
               </div>
             )
           })

@@ -32,6 +32,7 @@ vi.mock('@graphiql/react', () => {
 })
 
 vi.mock('../SavedQueriesContent.css', () => ({}))
+vi.mock('~/components/ConfirmDeleteButton.css', () => ({}))
 
 import SavedQueriesContent from '../SavedQueriesContent'
 
