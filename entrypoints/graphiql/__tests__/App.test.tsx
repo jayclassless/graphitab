@@ -29,7 +29,9 @@ vi.mock('~/utils/settings_storage', () => ({
   createGraphiQLSettingsStorage: mockCreateSettingsStorage,
 }))
 
-const mockGraphiQL = vi.hoisted(() => vi.fn(() => <div data-testid="graphiql">GraphiQL</div>))
+const mockGraphiQL = vi.hoisted(() =>
+  vi.fn((_props: Record<string, unknown>) => <div data-testid="graphiql">GraphiQL</div>)
+)
 
 vi.mock('graphiql', () => ({
   GraphiQL: mockGraphiQL,

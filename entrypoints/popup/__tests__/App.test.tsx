@@ -15,9 +15,9 @@ const mockRemove = vi.fn<(id: string) => Promise<void>>()
 const mockCreate = vi.fn<(name: string, url: string) => Promise<Profile>>()
 
 vi.mock('~/utils/profiles', () => ({
-  getAll: (...args: unknown[]) => mockGetAll(...args),
-  remove: (...args: unknown[]) => mockRemove(...args),
-  create: (...args: unknown[]) => mockCreate(...args),
+  getAll: () => mockGetAll(),
+  remove: (id: string) => mockRemove(id),
+  create: (name: string, url: string) => mockCreate(name, url),
 }))
 
 // Stub CSS imports
