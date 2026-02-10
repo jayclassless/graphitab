@@ -33,59 +33,6 @@ body {
   gap: var(--px-4);
 }
 
-.popup-profile-link {
-  all: unset;
-  flex: 1;
-  padding: var(--px-6) var(--px-8);
-  border-radius: var(--border-radius-4);
-  color: hsl(var(--color-neutral));
-  cursor: pointer;
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.popup-profile-link:hover {
-  background: hsla(var(--color-neutral), var(--alpha-background-light));
-}
-
-.popup-profile-link:active {
-  background: hsla(var(--color-neutral), var(--alpha-background-medium));
-}
-
-.popup-profile-link:focus {
-  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
-}
-
-.popup-empty {
-  color: hsla(var(--color-neutral), var(--alpha-tertiary));
-  font-style: italic;
-  text-align: center;
-  padding: var(--px-16);
-}
-
-.popup-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--px-6);
-  margin-top: var(--px-8);
-}
-
-.popup-input {
-  padding: var(--px-6) var(--px-8);
-  border: none;
-  border-radius: var(--border-radius-4);
-  background: hsla(var(--color-neutral), var(--alpha-background-light));
-  color: hsl(var(--color-neutral));
-  font-family: inherit;
-  font-size: inherit;
-}
-
-.popup-input:focus {
-  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
-}
-
 .popup-input-invalid {
   background: hsla(var(--color-error), var(--alpha-background-light));
   color: hsl(var(--color-error)) !important;
@@ -95,37 +42,16 @@ body {
   outline: hsla(var(--color-error), 0.8) auto 1px;
 }
 
+.popup-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-6);
+  margin-top: var(--px-8);
+}
+
 .popup-form-actions {
   display: flex;
   gap: var(--px-4);
-}
-
-.popup-btn {
-  padding: var(--px-6) var(--px-12);
-  border: none;
-  border-radius: var(--border-radius-4);
-  background: hsla(var(--color-neutral), var(--alpha-background-light));
-  color: hsl(var(--color-neutral));
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-}
-
-.popup-btn:hover {
-  background: hsla(var(--color-neutral), var(--alpha-background-medium));
-}
-
-.popup-btn:active {
-  background: hsla(var(--color-neutral), var(--alpha-background-medium));
-}
-
-.popup-btn:focus {
-  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
-}
-
-.popup-btn:disabled {
-  opacity: var(--alpha-tertiary);
-  cursor: not-allowed;
 }
 
 .popup-btn-primary {

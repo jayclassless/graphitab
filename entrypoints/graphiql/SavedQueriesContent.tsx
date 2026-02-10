@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import { SavedQuery, SavedQueriesStorage } from '~/utils/queries_storage'
 
+import '~/styles/shared.css'
 import './SavedQueriesContent.css'
 
 type SortField = 'name' | 'createdAt'
@@ -89,12 +90,12 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSave()
           }}
-          className="saved-queries-input"
+          className="gt-input"
         />
         <button
           onClick={handleSave}
           disabled={!queryName.trim() || !operationsString}
-          className="saved-queries-save-btn"
+          className="gt-btn"
         >
           Save
         </button>
@@ -102,12 +103,12 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
 
       <div className="saved-queries-list">
         {savedQueries.length === 0 ? (
-          <div className="saved-queries-empty">No saved queries yet</div>
+          <div className="gt-empty">No saved queries yet</div>
         ) : (
           sortedQueries.map((saved) => (
             <div key={saved.id} className="saved-queries-item">
               <button
-                className="saved-queries-item-name"
+                className="gt-list-item"
                 onClick={() => handleLoad(saved)}
                 title={saved.query}
               >
@@ -134,7 +135,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
             <option value="createdAt">Sort by Saved Date</option>
           </select>
           <button
-            className="saved-queries-sort-direction"
+            className="gt-btn saved-queries-sort-direction"
             onClick={() => setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))}
             title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
             aria-label={sortDirection === 'asc' ? 'Ascending' : 'Descending'}

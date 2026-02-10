@@ -1,3 +1,4 @@
+import '~/styles/shared.css'
 import './ConfirmDeleteButton.css'
 
 interface ConfirmDeleteButtonProps {
@@ -14,10 +15,10 @@ export default function ConfirmDeleteButton({
   if (isConfirming) {
     return (
       <div className="confirm-delete-wrapper">
-        <button className="confirm-delete-confirm" onClick={onDelete}>
+        <button className="gt-btn confirm-delete-confirm" onClick={onDelete}>
           Confirm
         </button>
-        <button className="confirm-delete-cancel" onClick={onCancel}>
+        <button className="gt-btn confirm-delete-cancel" onClick={onCancel}>
           Cancel
         </button>
       </div>

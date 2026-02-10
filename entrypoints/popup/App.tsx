@@ -5,6 +5,7 @@ import { browser } from 'wxt/browser'
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import * as profiles from '~/utils/profiles'
 
+import '~/styles/shared.css'
 import './App.css'
 import 'graphiql/style.css'
 
@@ -81,17 +82,13 @@ export default function App() {
       <div className="popup-title">GraphiTab</div>
       <div className="popup-list">
         {sortedProfiles.length === 0 ? (
-          <div className="popup-empty">No profiles configured</div>
+          <div className="gt-empty">No profiles configured</div>
         ) : (
           sortedProfiles.map((profile) => {
             const params = qs.stringify({ profile: profile.id })
             return (
               <div key={profile.id} className="popup-profile-item">
-                <a
-                  className="popup-profile-link"
-                  href={`${GRAPHIQL_PATH}?${params}`}
-                  target="_blank"
-                >
+                <a className="gt-list-item" href={`${GRAPHIQL_PATH}?${params}`} target="_blank">
                   {profile.name}
                 </a>
                 <ConfirmDeleteButton
@@ -107,14 +104,14 @@ export default function App() {
       {showForm ? (
         <div className="popup-form">
           <input
-            className="popup-input"
+            className="gt-input"
             type="text"
             placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
-            className={`popup-input${urlInvalid ? ' popup-input-invalid' : ''}`}
+            className={`gt-input${urlInvalid ? ' popup-input-invalid' : ''}`}
             type="url"
             placeholder="GraphQL endpoint URL"
             value={url}
@@ -125,19 +122,19 @@ export default function App() {
           />
           <div className="popup-form-actions">
             <button
-              className="popup-btn popup-btn-primary"
+              className="gt-btn popup-btn-primary"
               onClick={handleCreate}
               disabled={!canSubmit}
             >
               Add
             </button>
-            <button className="popup-btn" onClick={resetForm}>
+            <button className="gt-btn" onClick={resetForm}>
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <button className="popup-btn popup-btn-add" onClick={() => setShowForm(true)}>
+        <button className="gt-btn popup-btn-add" onClick={() => setShowForm(true)}>
           + New Profile
         </button>
       )}

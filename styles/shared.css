@@ -1,0 +1,68 @@
+.gt-input {
+  padding: var(--px-6) var(--px-8);
+  border: none;
+  border-radius: var(--border-radius-4);
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+  color: hsl(var(--color-neutral));
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.gt-input:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}
+
+.gt-btn {
+  padding: var(--px-6) var(--px-12);
+  border: none;
+  border-radius: var(--border-radius-4);
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+  color: hsl(var(--color-neutral));
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.gt-btn:hover {
+  background: hsla(var(--color-neutral), var(--alpha-background-medium));
+}
+
+.gt-btn:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}
+
+.gt-btn:disabled {
+  opacity: var(--alpha-tertiary);
+  cursor: not-allowed;
+}
+
+.gt-empty {
+  color: hsla(var(--color-neutral), var(--alpha-tertiary));
+  font-style: italic;
+  text-align: center;
+  padding: var(--px-16);
+}
+
+.gt-list-item {
+  all: unset;
+  flex: 1;
+  padding: var(--px-6) var(--px-8);
+  border-radius: var(--border-radius-4);
+  color: hsl(var(--color-neutral));
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-list-item:hover {
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+}
+
+.gt-list-item:active {
+  background: hsla(var(--color-neutral), var(--alpha-background-medium));
+}
+
+.gt-list-item:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}

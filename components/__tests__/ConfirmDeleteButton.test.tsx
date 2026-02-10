@@ -5,6 +5,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
 vi.mock('../ConfirmDeleteButton.css', () => ({}))
+vi.mock('~/styles/shared.css', () => ({}))
 
 import ConfirmDeleteButton from '../ConfirmDeleteButton'
 

@@ -47,6 +47,7 @@ vi.mock('@graphiql/toolkit', () => ({
 
 vi.mock('../SavedQueriesContent.css', () => ({}))
 vi.mock('../App.css', () => ({}))
+vi.mock('~/styles/shared.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
 vi.mock('@graphiql/plugin-explorer/style.css', () => ({}))
 

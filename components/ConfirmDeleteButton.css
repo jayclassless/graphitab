@@ -25,10 +25,6 @@
 .confirm-delete-confirm,
 .confirm-delete-cancel {
   padding: var(--px-4) var(--px-8);
-  border: none;
-  border-radius: var(--border-radius-4);
-  font-size: inherit;
-  cursor: pointer;
   line-height: var(--line-height);
 }
 
@@ -43,17 +39,4 @@
 
 .confirm-delete-confirm:focus {
   outline: hsla(var(--color-error), 0.8) auto 1px;
-}
-
-.confirm-delete-cancel {
-  background: hsla(var(--color-neutral), var(--alpha-background-light));
-  color: hsl(var(--color-neutral));
-}
-
-.confirm-delete-cancel:hover {
-  background: hsla(var(--color-neutral), var(--alpha-background-medium));
-}
-
-.confirm-delete-cancel:focus {
-  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
 }
