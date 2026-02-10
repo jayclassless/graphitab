@@ -4,7 +4,7 @@ import { explorerPlugin } from '@graphiql/plugin-explorer'
 import { createGraphiQLFetcher } from '@graphiql/toolkit'
 import { GraphiQL } from 'graphiql'
 import qs from 'qs'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 import { get as getProfile, type Profile } from '~/utils/profiles'
 import { createSavedQueriesStorage } from '~/utils/queries_storage'
@@ -29,13 +29,15 @@ export function createSavedQueriesPlugin(profileId: string): GraphiQLPlugin {
 }
 
 export default function App() {
-  const query = qs.parse(document.location.search.slice(1))
+  const profileId = useMemo(() => {
+    const query = qs.parse(document.location.search.slice(1))
+    return query.profile as string | undefined
+  }, [])
 
   const [profile, setProfile] = useState<Profile | undefined>(undefined)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const profileId = query.profile as string
     if (profileId) {
       getProfile(profileId)
         .then((p) => {
@@ -45,7 +47,7 @@ export default function App() {
     } else {
       setLoading(false)
     }
-  }, [query.profile])
+  }, [profileId])
 
   useEffect(() => {
     if (profile) {
@@ -53,26 +55,31 @@ export default function App() {
     }
   }, [profile])
 
+  const fetcher = useMemo(
+    () => (profile ? createGraphiQLFetcher({ url: profile.url }) : null),
+    [profile]
+  )
+
+  const settingsStorage = useMemo(
+    () => (profile ? createGraphiQLSettingsStorage(profile.id) : null),
+    [profile]
+  )
+
+  const plugins = useMemo(
+    () =>
+      profile
+        ? [explorerPlugin({ showAttribution: false }), createSavedQueriesPlugin(profile.id)]
+        : [],
+    [profile]
+  )
+
   if (loading) {
     return <div className="graphiql-container graphiqltab-root">Loading...</div>
   }
 
-  if (!profile) {
+  if (!profile || !fetcher || !settingsStorage) {
     return <div className="graphiql-container graphiqltab-root">Profile not found</div>
   }
-
-  const fetcher = createGraphiQLFetcher({
-    url: profile.url,
-  })
-
-  const settingsStorage = createGraphiQLSettingsStorage(profile.id)
-
-  const plugins = [
-    explorerPlugin({
-      showAttribution: false,
-    }),
-    createSavedQueriesPlugin(profile.id),
-  ]
 
   return <GraphiQL fetcher={fetcher} storage={settingsStorage} plugins={plugins} />
 }
