@@ -24,7 +24,6 @@ export default function App() {
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const sortedProfiles = useMemo(
@@ -57,11 +56,6 @@ export default function App() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirmDeleteId !== id) {
-      setConfirmDeleteId(id)
-      return
-    }
-    setConfirmDeleteId(null)
     setError(null)
 
     try {
@@ -107,11 +101,7 @@ export default function App() {
                 <a className="gt-list-item" href={`${GRAPHIQL_PATH}?${params}`} target="_blank">
                   {profile.name}
                 </a>
-                <ConfirmDeleteButton
-                  isConfirming={confirmDeleteId === profile.id}
-                  onDelete={() => handleDelete(profile.id)}
-                  onCancel={() => setConfirmDeleteId(null)}
-                />
+                <ConfirmDeleteButton onDelete={() => handleDelete(profile.id)} />
               </div>
             )
           })

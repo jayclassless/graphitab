@@ -22,7 +22,6 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
   const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([])
   const [queryName, setQueryName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [error, setError] = useState<string | null>(null)
@@ -74,11 +73,6 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
   }
 
   const handleDelete = async (id: string) => {
-    if (confirmDeleteId !== id) {
-      setConfirmDeleteId(id)
-      return
-    }
-    setConfirmDeleteId(null)
     setError(null)
     try {
       await storage.remove(id)
@@ -128,11 +122,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
               >
                 {saved.name}
               </button>
-              <ConfirmDeleteButton
-                isConfirming={confirmDeleteId === saved.id}
-                onDelete={() => handleDelete(saved.id)}
-                onCancel={() => setConfirmDeleteId(null)}
-              />
+              <ConfirmDeleteButton onDelete={() => handleDelete(saved.id)} />
             </div>
           ))
         )}

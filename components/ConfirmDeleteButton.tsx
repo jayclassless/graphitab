@@ -1,24 +1,28 @@
+import { useState } from 'react'
+
 import '~/styles/shared.css'
 import './ConfirmDeleteButton.css'
 
 interface ConfirmDeleteButtonProps {
-  isConfirming: boolean
   onDelete: () => void
-  onCancel: () => void
 }
 
-export default function ConfirmDeleteButton({
-  isConfirming,
-  onDelete,
-  onCancel,
-}: ConfirmDeleteButtonProps) {
+export default function ConfirmDeleteButton({ onDelete }: ConfirmDeleteButtonProps) {
+  const [isConfirming, setIsConfirming] = useState(false)
+
   if (isConfirming) {
     return (
       <div className="confirm-delete-wrapper">
-        <button className="gt-btn confirm-delete-confirm" onClick={onDelete}>
+        <button
+          className="gt-btn confirm-delete-confirm"
+          onClick={() => {
+            setIsConfirming(false)
+            onDelete()
+          }}
+        >
           Confirm
         </button>
-        <button className="gt-btn confirm-delete-cancel" onClick={onCancel}>
+        <button className="gt-btn confirm-delete-cancel" onClick={() => setIsConfirming(false)}>
           Cancel
         </button>
       </div>
@@ -26,7 +30,12 @@ export default function ConfirmDeleteButton({
   }
 
   return (
-    <button className="confirm-delete-btn" onClick={onDelete} title="Delete" aria-label="Delete">
+    <button
+      className="confirm-delete-btn"
+      onClick={() => setIsConfirming(true)}
+      title="Delete"
+      aria-label="Delete"
+    >
       ×
     </button>
   )

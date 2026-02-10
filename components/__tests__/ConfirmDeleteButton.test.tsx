@@ -14,40 +14,55 @@ describe('ConfirmDeleteButton', () => {
     cleanup()
   })
 
-  it('renders × button when not confirming', () => {
-    render(<ConfirmDeleteButton isConfirming={false} onDelete={vi.fn()} onCancel={vi.fn()} />)
+  it('renders × button initially', () => {
+    render(<ConfirmDeleteButton onDelete={vi.fn()} />)
     expect(screen.getByTitle('Delete')).toBeInTheDocument()
     expect(screen.queryByText('Confirm')).not.toBeInTheDocument()
   })
 
-  it('calls onDelete when × button is clicked', async () => {
+  it('shows Confirm and Cancel on × click', async () => {
     const user = userEvent.setup()
-    const onDelete = vi.fn()
-    render(<ConfirmDeleteButton isConfirming={false} onDelete={onDelete} onCancel={vi.fn()} />)
+    render(<ConfirmDeleteButton onDelete={vi.fn()} />)
     await user.click(screen.getByTitle('Delete'))
-    expect(onDelete).toHaveBeenCalledOnce()
-  })
-
-  it('renders Confirm and Cancel buttons when confirming', () => {
-    render(<ConfirmDeleteButton isConfirming={true} onDelete={vi.fn()} onCancel={vi.fn()} />)
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()
     expect(screen.queryByTitle('Delete')).not.toBeInTheDocument()
   })
 
+  it('does not call onDelete on × click', async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+    render(<ConfirmDeleteButton onDelete={onDelete} />)
+    await user.click(screen.getByTitle('Delete'))
+    expect(onDelete).not.toHaveBeenCalled()
+  })
+
   it('calls onDelete when Confirm is clicked', async () => {
     const user = userEvent.setup()
     const onDelete = vi.fn()
-    render(<ConfirmDeleteButton isConfirming={true} onDelete={onDelete} onCancel={vi.fn()} />)
+    render(<ConfirmDeleteButton onDelete={onDelete} />)
+    await user.click(screen.getByTitle('Delete'))
     await user.click(screen.getByText('Confirm'))
     expect(onDelete).toHaveBeenCalledOnce()
   })
 
-  it('calls onCancel when Cancel is clicked', async () => {
+  it('resets to × button after Confirm', async () => {
     const user = userEvent.setup()
-    const onCancel = vi.fn()
-    render(<ConfirmDeleteButton isConfirming={true} onDelete={vi.fn()} onCancel={onCancel} />)
+    render(<ConfirmDeleteButton onDelete={vi.fn()} />)
+    await user.click(screen.getByTitle('Delete'))
+    await user.click(screen.getByText('Confirm'))
+    expect(screen.getByTitle('Delete')).toBeInTheDocument()
+    expect(screen.queryByText('Confirm')).not.toBeInTheDocument()
+  })
+
+  it('resets to × button on Cancel', async () => {
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+    render(<ConfirmDeleteButton onDelete={onDelete} />)
+    await user.click(screen.getByTitle('Delete'))
     await user.click(screen.getByText('Cancel'))
-    expect(onCancel).toHaveBeenCalledOnce()
+    expect(screen.getByTitle('Delete')).toBeInTheDocument()
+    expect(screen.queryByText('Confirm')).not.toBeInTheDocument()
+    expect(onDelete).not.toHaveBeenCalled()
   })
 })
