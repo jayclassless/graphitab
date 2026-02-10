@@ -29,8 +29,8 @@ vi.mock('wxt/browser', () => ({
       getURL: (path: string) => `chrome-extension://test-id${path}`,
     },
     tabs: {
-      query: (...args: unknown[]) => mockTabsQuery(...args),
-      remove: (...args: unknown[]) => mockTabsRemove(...args),
+      query: (queryInfo: object) => mockTabsQuery(queryInfo),
+      remove: (tabIds: number[]) => mockTabsRemove(tabIds),
     },
   },
 }))

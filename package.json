@@ -16,7 +16,7 @@
     "compile": "tsc --noEmit",
     "format": "oxfmt --write .",
     "lint": "oxlint",
-    "test": "vitest run",
+    "test": "tsc --noEmit && vitest run",
     "test:coverage": "vitest run --coverage",
     "postinstall": "wxt prepare"
   },
