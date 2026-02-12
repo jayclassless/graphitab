@@ -45,6 +45,15 @@ export async function remove(id: string): Promise<void> {
   createGraphiQLSettingsStorage(id).clear()
 }
 
+export async function update(id: string, name: string, url: string): Promise<Profile> {
+  const profiles = await getAll()
+  const index = profiles.findIndex((p) => p.id === id)
+  if (index === -1) throw new Error(`Profile not found: ${id}`)
+  profiles[index] = { ...profiles[index], name, url }
+  await profilesStorageItem.setValue(profiles)
+  return profiles[index]
+}
+
 export async function create(name: string, url: string): Promise<Profile> {
   const profiles = await getAll()
   const profile: Profile = {

@@ -5,7 +5,7 @@ body {
 .popup {
   display: flex;
   flex-direction: column;
-  min-width: 240px;
+  min-width: 360px;
   padding: var(--px-8);
   font-family: var(--font-family);
   font-size: var(--font-size-body);
@@ -37,6 +37,25 @@ body {
   display: flex;
   align-items: center;
   gap: var(--px-4);
+}
+
+.popup-edit-btn {
+  all: unset;
+  padding: var(--px-4) var(--px-8);
+  border-radius: var(--border-radius-4);
+  color: hsla(var(--color-neutral), var(--alpha-secondary));
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.popup-edit-btn:hover {
+  background: hsla(var(--color-primary), var(--alpha-background-light));
+  color: hsl(var(--color-primary));
+}
+
+.popup-edit-btn:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
 }
 
 .popup-input-invalid {

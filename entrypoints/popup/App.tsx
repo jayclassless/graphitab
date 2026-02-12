@@ -9,6 +9,8 @@ import 'graphiql/style.css'
 
 const GRAPHIQL_PATH = '/graphiql.html'
 
+type FormMode = { kind: 'closed' } | { kind: 'create' } | { kind: 'edit'; profileId: string }
+
 function isValidUrl(value: string): boolean {
   try {
     const parsed = new URL(value)
@@ -20,7 +22,7 @@ function isValidUrl(value: string): boolean {
 
 export default function App() {
   const [allProfiles, setAllProfiles] = useState<profiles.Profile[]>([])
-  const [showForm, setShowForm] = useState(false)
+  const [formMode, setFormMode] = useState<FormMode>({ kind: 'closed' })
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +53,7 @@ export default function App() {
   const resetForm = () => {
     setName('')
     setUrl('')
-    setShowForm(false)
+    setFormMode({ kind: 'closed' })
   }
 
   const handleDelete = async (id: string) => {
@@ -85,6 +87,33 @@ export default function App() {
     loadProfiles()
   }
 
+  const handleEdit = (profile: profiles.Profile) => {
+    setName(profile.name)
+    setUrl(profile.url)
+    setFormMode({ kind: 'edit', profileId: profile.id })
+  }
+
+  const handleUpdate = async () => {
+    if (!canSubmit || formMode.kind !== 'edit') return
+    setError(null)
+
+    try {
+      await profiles.update(formMode.profileId, trimmedName, trimmedUrl)
+      resetForm()
+    } catch {
+      setError('Failed to update profile')
+    }
+    loadProfiles()
+  }
+
+  const handleSubmit = () => {
+    if (formMode.kind === 'edit') {
+      handleUpdate()
+    } else {
+      handleCreate()
+    }
+  }
+
   return (
     <div className="popup graphiql-container">
       <div className="popup-title">GraphiTab</div>
@@ -100,13 +129,21 @@ export default function App() {
                 <a className="gt-list-item" href={`${GRAPHIQL_PATH}?${params}`} target="_blank">
                   {profile.name}
                 </a>
+                <button
+                  className="popup-edit-btn"
+                  onClick={() => handleEdit(profile)}
+                  title="Edit"
+                  aria-label="Edit"
+                >
+                  ✎
+                </button>
                 <ConfirmDeleteButton onDelete={() => handleDelete(profile.id)} />
               </div>
             )
           })
         )}
       </div>
-      {showForm ? (
+      {formMode.kind !== 'closed' ? (
         <div className="popup-form">
           <input
             className="gt-input"
@@ -122,16 +159,16 @@ export default function App() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreate()
+              if (e.key === 'Enter') handleSubmit()
             }}
           />
           <div className="popup-form-actions">
             <button
               className="gt-btn popup-btn-primary"
-              onClick={handleCreate}
+              onClick={handleSubmit}
               disabled={!canSubmit}
             >
-              Add
+              {formMode.kind === 'edit' ? 'Save' : 'Add'}
             </button>
             <button className="gt-btn" onClick={resetForm}>
               Cancel
@@ -139,7 +176,7 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <button className="gt-btn popup-btn-add" onClick={() => setShowForm(true)}>
+        <button className="gt-btn popup-btn-add" onClick={() => setFormMode({ kind: 'create' })}>
           + New Profile
         </button>
       )}

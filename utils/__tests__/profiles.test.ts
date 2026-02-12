@@ -115,6 +115,49 @@ describe('profiles', () => {
     })
   })
 
+  describe('update', () => {
+    it('updates name and url of an existing profile', async () => {
+      const { update, getAll } = await importProfiles()
+      await update('swapi', 'Updated SWAPI', 'https://updated.example.com/graphql')
+      const profiles = await getAll()
+      expect(profiles[0]).toEqual({
+        id: 'swapi',
+        name: 'Updated SWAPI',
+        url: 'https://updated.example.com/graphql',
+      })
+    })
+
+    it('returns the updated profile', async () => {
+      const { update } = await importProfiles()
+      const result = await update('swapi', 'Updated SWAPI', 'https://updated.example.com/graphql')
+      expect(result).toEqual({
+        id: 'swapi',
+        name: 'Updated SWAPI',
+        url: 'https://updated.example.com/graphql',
+      })
+    })
+
+    it('does not modify other profiles', async () => {
+      const { update, getAll } = await importProfiles()
+      await update('swapi', 'Updated SWAPI', 'https://updated.example.com/graphql')
+      const profiles = await getAll()
+      expect(profiles[1]).toEqual(DEFAULT_PROFILES[1])
+    })
+
+    it('throws when profile ID does not exist', async () => {
+      const { update } = await importProfiles()
+      await expect(update('non-existent', 'Name', 'https://example.com/graphql')).rejects.toThrow(
+        'Profile not found: non-existent'
+      )
+    })
+
+    it('preserves the profile ID', async () => {
+      const { update } = await importProfiles()
+      const result = await update('swapi', 'New Name', 'https://new.example.com/graphql')
+      expect(result.id).toBe('swapi')
+    })
+  })
+
   describe('create', () => {
     it('creates a new profile with a generated id', async () => {
       const { create } = await importProfiles()

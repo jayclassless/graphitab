@@ -13,11 +13,13 @@ const mockProfiles: Profile[] = [
 const mockGetAll = vi.fn<() => Promise<Profile[]>>()
 const mockRemove = vi.fn<(id: string) => Promise<void>>()
 const mockCreate = vi.fn<(name: string, url: string) => Promise<Profile>>()
+const mockUpdate = vi.fn<(id: string, name: string, url: string) => Promise<Profile>>()
 
 vi.mock('~/utils/profiles', () => ({
   getAll: () => mockGetAll(),
   remove: (id: string) => mockRemove(id),
   create: (name: string, url: string) => mockCreate(name, url),
+  update: (id: string, name: string, url: string) => mockUpdate(id, name, url),
 }))
 
 const mockTabsQuery = vi.fn<(queryInfo: object) => Promise<{ id: number }[]>>()
@@ -53,6 +55,7 @@ describe('Popup App', () => {
     mockGetAll.mockResolvedValue([...mockProfiles])
     mockRemove.mockResolvedValue(undefined)
     mockCreate.mockResolvedValue({ id: 'new', name: 'New', url: 'https://new.com/graphql' })
+    mockUpdate.mockResolvedValue({ id: 'a', name: 'Updated', url: 'https://updated.com/graphql' })
     mockTabsQuery.mockResolvedValue([])
     mockTabsRemove.mockResolvedValue(undefined)
   })
@@ -178,6 +181,121 @@ describe('Popup App', () => {
       await user.click(screen.getByText('Add'))
       await waitFor(() => {
         expect(screen.queryByPlaceholderText('Name')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('edit profile', () => {
+    it('shows edit buttons for each profile', async () => {
+      await renderApp()
+      const editButtons = screen.getAllByTitle('Edit')
+      expect(editButtons).toHaveLength(2)
+    })
+
+    it('pre-fills form with profile data when Edit is clicked', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      expect(screen.getByPlaceholderText('Name')).toHaveValue('Alpha API')
+      expect(screen.getByPlaceholderText('GraphQL endpoint URL')).toHaveValue(
+        'https://alpha.com/graphql'
+      )
+    })
+
+    it('shows "Save" button instead of "Add" in edit mode', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      expect(screen.getByText('Save')).toBeInTheDocument()
+      expect(screen.queryByText('Add')).not.toBeInTheDocument()
+    })
+
+    it('calls update with correct args on Save', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.clear(screen.getByPlaceholderText('Name'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Updated Alpha')
+      await user.clear(screen.getByPlaceholderText('GraphQL endpoint URL'))
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://updated.com/graphql'
+      )
+      await user.click(screen.getByText('Save'))
+      expect(mockUpdate).toHaveBeenCalledWith('a', 'Updated Alpha', 'https://updated.com/graphql')
+      expect(mockGetAll).toHaveBeenCalledTimes(2)
+    })
+
+    it('hides form after successful update', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.click(screen.getByText('Save'))
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText('Name')).not.toBeInTheDocument()
+      })
+    })
+
+    it('discards changes on Cancel', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.clear(screen.getByPlaceholderText('Name'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Changed')
+      await user.click(screen.getByText('Cancel'))
+      expect(screen.queryByPlaceholderText('Name')).not.toBeInTheDocument()
+      expect(screen.getByText('+ New Profile')).toBeInTheDocument()
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
+    it('validates URL in edit mode', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.clear(screen.getByPlaceholderText('GraphQL endpoint URL'))
+      await user.type(screen.getByPlaceholderText('GraphQL endpoint URL'), 'not-a-url')
+      expect(screen.getByText('Save')).toBeDisabled()
+      expect(screen.getByPlaceholderText('GraphQL endpoint URL')).toHaveClass('popup-input-invalid')
+    })
+
+    it('disables Save when name is empty', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.clear(screen.getByPlaceholderText('Name'))
+      expect(screen.getByText('Save')).toBeDisabled()
+    })
+
+    it('submits on Enter in URL field during edit', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.clear(screen.getByPlaceholderText('Name'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Updated')
+      await user.clear(screen.getByPlaceholderText('GraphQL endpoint URL'))
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://updated.com/graphql{Enter}'
+      )
+      expect(mockUpdate).toHaveBeenCalledWith('a', 'Updated', 'https://updated.com/graphql')
+    })
+
+    it('switches from create to edit mode', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      expect(screen.getByText('Add')).toBeInTheDocument()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      expect(screen.getByText('Save')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Name')).toHaveValue('Alpha API')
+    })
+
+    it('switches between editing different profiles', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      expect(screen.getByPlaceholderText('Name')).toHaveValue('Alpha API')
+      await user.click(screen.getAllByTitle('Edit')[1])
+      expect(screen.getByPlaceholderText('Name')).toHaveValue('Bravo API')
+    })
+
+    it('shows error when update fails', async () => {
+      mockUpdate.mockRejectedValue(new Error('storage error'))
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.click(screen.getByText('Save'))
+      await waitFor(() => {
+        expect(screen.getByText('Failed to update profile')).toBeInTheDocument()
       })
     })
   })
