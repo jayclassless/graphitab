@@ -1,9 +1,9 @@
-name: Unit Tests
+name: Lint & Formatting
 
 on: push
 
 jobs:
-  unit-tests:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,4 +17,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm test:coverage
+      - run: pnpm compile
+        if: always()
+
+      - run: pnpm lint
+        if: always()
+
+      - run: pnpm format:check
+        if: always()

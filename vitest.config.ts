@@ -10,6 +10,12 @@ export default defineConfig({
       provider: 'v8',
       include: ['utils/**/*.ts', 'entrypoints/**/*.{ts,tsx}', 'components/**/*.tsx'],
       exclude: ['**/main.tsx', '**/__tests__/**'],
+      thresholds: {
+        lines: 95,
+        functions: 95,
+        branches: 95,
+        statements: 95,
+      },
     },
   },
 })
