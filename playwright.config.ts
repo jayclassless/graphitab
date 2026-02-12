@@ -5,4 +5,8 @@ export default defineConfig({
   timeout: 30_000,
   workers: 1,
   retries: 2,
+  reporter: 'list',
+  use: {
+    screenshot: 'only-on-failure',
+  },
 })

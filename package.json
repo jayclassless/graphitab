@@ -6,7 +6,6 @@
   "license": "MIT",
   "author": "Jason Simeone",
   "type": "module",
-  "packageManager": "pnpm@10.28.2",
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
@@ -48,5 +47,6 @@
     "vitest": "^4.0.18",
     "vitest-localstorage-mock": "^0.1.2",
     "wxt": "^0.20.15"
-  }
+  },
+  "packageManager": "pnpm@10.28.2"
 }
