@@ -1,6 +1,8 @@
 import { storage } from '#imports'
 import { v4 as uuid } from 'uuid'
 
+import { compress, decompress } from './compression'
+
 export type SavedQuery = {
   id: string
   name: string
@@ -19,17 +21,25 @@ export type SavedQueriesStorage = {
 }
 
 function createSavedQueriesStorageItem(profileId: string) {
-  return storage.defineItem<SavedQuery[]>(`sync:savedQueries:${profileId}`, {
-    fallback: [],
-  })
+  return storage.defineItem<string>(`sync:savedQueries:${profileId}`)
 }
 
 export function createSavedQueriesStorage(profileId: string): SavedQueriesStorage {
   const storageItem = createSavedQueriesStorageItem(profileId)
 
+  async function readQueries(): Promise<SavedQuery[]> {
+    const raw = await storageItem.getValue()
+    if (raw == null) return []
+    return JSON.parse(await decompress(raw)) as SavedQuery[]
+  }
+
+  async function writeQueries(queries: SavedQuery[]): Promise<void> {
+    await storageItem.setValue(await compress(JSON.stringify(queries)))
+  }
+
   return {
     async getAll(): Promise<SavedQuery[]> {
-      return await storageItem.getValue()
+      return await readQueries()
     },
 
     async create(
@@ -65,14 +75,14 @@ export function createSavedQueriesStorage(profileId: string): SavedQueriesStorag
         queries.push(query)
       }
 
-      await storageItem.setValue(queries)
+      await writeQueries(queries)
 
       return queries
     },
 
     async remove(id: string): Promise<SavedQuery[]> {
       const newQueries = (await this.getAll()).filter((q) => q.id !== id)
-      await storageItem.setValue(newQueries)
+      await writeQueries(newQueries)
       return newQueries
     },
 

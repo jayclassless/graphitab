@@ -168,4 +168,18 @@ describe('createSavedQueriesStorage', () => {
     expect(await s2.getAll()).toHaveLength(1)
     expect((await s2.getAll())[0].name).toBe('P2 Query')
   })
+
+  describe('compression', () => {
+    it('stores data as a compressed base64 string after create', async () => {
+      const storage = await createStorage()
+      await storage.create('My Query', '{ hero { name } }')
+
+      const raw = (await fakeBrowser.storage.sync.get('savedQueries:profile-1'))[
+        'savedQueries:profile-1'
+      ]
+      expect(typeof raw).toBe('string')
+      expect(raw).toMatch(/^[A-Za-z0-9+/]+=*$/)
+      expect(Array.isArray(raw)).toBe(false)
+    })
+  })
 })
