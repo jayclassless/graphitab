@@ -1,0 +1,123 @@
+import { test, expect } from './fixtures'
+
+test.describe('GraphiQL Page', () => {
+  test('loads GraphiQL with a default profile', async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await expect(page.locator('.graphiql-execute-button')).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page).toHaveTitle('Countries - GraphiTab')
+  })
+
+  test('shows "Profile not found" for invalid profile ID', async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=nonexistent`)
+    await expect(page.getByText('Profile not found')).toBeVisible()
+  })
+
+  test('shows "Profile not found" when no profile param', async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html`)
+    await expect(page.getByText('Profile not found')).toBeVisible()
+  })
+
+  test('can execute a query against the Countries API', async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await expect(page.locator('.graphiql-execute-button')).toBeVisible({
+      timeout: 15_000,
+    })
+
+    // Focus the query editor's Monaco textarea and replace contents
+    const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')
+    await queryEditor.click({ force: true })
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('{ countries { name } }', { delay: 10 })
+
+    await page.locator('.graphiql-execute-button').click()
+
+    await expect(page.locator('.graphiql-response')).toContainText('countries', {
+      timeout: 10_000,
+    })
+  })
+
+  test('Explorer plugin is available', async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await expect(page.locator('.graphiql-execute-button')).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page.getByLabel('Show GraphiQL Explorer')).toBeVisible()
+  })
+
+  test('Saved Queries plugin is available', async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await expect(page.locator('.graphiql-execute-button')).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page.getByLabel('Show Saved Queries')).toBeVisible()
+  })
+})
+
+test.describe('Saved Queries', () => {
+  test.beforeEach(async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await expect(page.locator('.graphiql-execute-button')).toBeVisible({
+      timeout: 15_000,
+    })
+    await page.getByLabel('Show Saved Queries').click()
+  })
+
+  test('shows empty state when no queries saved', async ({ page }) => {
+    await expect(page.getByText('No saved queries yet')).toBeVisible()
+  })
+
+  test('save and load a query', async ({ page }) => {
+    // Type a query in the editor
+    const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')
+    await queryEditor.click({ force: true })
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('{ countries { capital } }', { delay: 10 })
+
+    // Save it
+    await page.getByPlaceholder('Query name...').fill('Capitals Query')
+    await page.locator('.saved-queries-plugin').getByRole('button', { name: 'Save' }).click()
+
+    await expect(page.getByText('Capitals Query')).toBeVisible()
+
+    // Type a different query
+    await queryEditor.click({ force: true })
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('{ continents { name } }', { delay: 10 })
+
+    // Load the saved query back and execute to verify
+    await page.locator('.saved-queries-item').filter({ hasText: 'Capitals Query' }).click()
+    await page.locator('.graphiql-execute-button').click()
+
+    await expect(page.locator('.graphiql-response')).toContainText('capital', {
+      timeout: 10_000,
+    })
+  })
+
+  test('delete a saved query', async ({ page }) => {
+    // Save a query first
+    const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')
+    await queryEditor.click({ force: true })
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('{ countries { name } }', { delay: 10 })
+
+    await page.getByPlaceholder('Query name...').fill('Temp Query')
+    await page.locator('.saved-queries-plugin').getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByText('Temp Query')).toBeVisible()
+
+    // Delete it
+    await page
+      .locator('.saved-queries-item')
+      .filter({ hasText: 'Temp Query' })
+      .getByTitle('Delete')
+      .click()
+    await page.getByText('Confirm').click()
+
+    await expect(page.getByText('Temp Query')).not.toBeVisible()
+  })
+})
