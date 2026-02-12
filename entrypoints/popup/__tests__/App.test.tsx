@@ -152,6 +152,17 @@ describe('Popup App', () => {
       expect(mockGetAll).toHaveBeenCalledTimes(2)
     })
 
+    it('submits on Enter in Name field', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      await user.type(screen.getByPlaceholderText('Name'), 'Test{Enter}')
+      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql')
+    })
+
     it('submits on Enter in URL field', async () => {
       const { user } = await renderApp()
       await user.click(screen.getByText('+ New Profile'))

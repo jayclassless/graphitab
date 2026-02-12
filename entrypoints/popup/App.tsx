@@ -151,6 +151,9 @@ export default function App() {
             placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSubmit()
+            }}
           />
           <input
             className={`gt-input${urlInvalid ? ' popup-input-invalid' : ''}`}
