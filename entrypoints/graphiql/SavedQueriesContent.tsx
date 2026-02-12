@@ -110,7 +110,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
 
       {error && <div className="saved-queries-error">{error}</div>}
       <div className="saved-queries-list">
-        {savedQueries.length === 0 ? (
+        {sortedQueries.length === 0 ? (
           <div className="gt-empty">No saved queries yet</div>
         ) : (
           sortedQueries.map((saved) => (
@@ -128,7 +128,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
         )}
       </div>
 
-      {savedQueries.length > 0 && (
+      {sortedQueries.length > 0 && (
         <div className="saved-queries-sort-section">
           <select
             className="saved-queries-sort-select"

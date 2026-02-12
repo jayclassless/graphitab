@@ -37,13 +37,13 @@ export default function App() {
   const urlInvalid = !!trimmedUrl && !isValidUrl(trimmedUrl)
   const canSubmit = !!trimmedName && !urlInvalid && !!trimmedUrl
 
-  const loadProfiles = () => {
-    profiles
-      .getAll()
-      .then(setAllProfiles)
-      .catch(() => {
-        setError('Failed to load profiles')
-      })
+  const loadProfiles = async () => {
+    try {
+      const all = await profiles.getAll()
+      setAllProfiles(all)
+    } catch {
+      setError('Failed to load profiles')
+    }
   }
 
   useEffect(() => {

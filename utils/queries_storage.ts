@@ -63,15 +63,10 @@ export function createSavedQueriesStorage(profileId: string): SavedQueriesStorag
     async save(query: SavedQuery): Promise<SavedQuery[]> {
       const queries = [...(await this.getAll())]
 
-      let found = false
-      for (let i = 0; i < queries.length; i++) {
-        if (queries[i].id === query.id) {
-          queries[i] = query
-          found = true
-          break
-        }
-      }
-      if (!found) {
+      const idx = queries.findIndex((q) => q.id === query.id)
+      if (idx >= 0) {
+        queries[idx] = query
+      } else {
         queries.push(query)
       }
 
