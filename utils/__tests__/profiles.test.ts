@@ -5,32 +5,6 @@ vi.mock('uuid', () => ({
   v4: vi.fn(() => 'test-uuid'),
 }))
 
-// Mock localStorage for settings_storage (used by profiles.remove cleanup).
-// Values are stored as own enumerable properties so that `for (key in localStorage)` works.
-const localStorageMock: Storage = {
-  getItem(key: string) {
-    return Object.prototype.hasOwnProperty.call(this, key) ? (this as any)[key] : null
-  },
-  setItem(key: string, value: string) {
-    ;(this as any)[key] = value
-  },
-  removeItem(key: string) {
-    delete (this as any)[key]
-  },
-  clear() {
-    for (const key of Object.keys(this)) {
-      if (typeof (this as any)[key] === 'string') delete (this as any)[key]
-    }
-  },
-  key(_index: number) {
-    return null
-  },
-  get length() {
-    return 0
-  },
-}
-Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
-
 const DEFAULT_PROFILES = [
   {
     id: 'swapi',

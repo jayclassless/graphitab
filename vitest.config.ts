@@ -4,6 +4,7 @@ import { WxtVitest } from 'wxt/testing'
 export default defineConfig({
   plugins: [WxtVitest()],
   test: {
+    setupFiles: ['vitest-localstorage-mock'],
     coverage: {
       provider: 'v8',
       include: ['utils/**/*.ts', 'entrypoints/**/*.tsx', 'components/**/*.tsx'],

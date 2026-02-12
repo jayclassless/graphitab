@@ -3,7 +3,11 @@ import type { Storage as GraphiQLStorage } from '@graphiql/toolkit'
 function getAllKeys(prefix: string): string[] {
   const keys: string[] = []
 
-  for (const key in localStorage) {
+  for (let i = 0; i < localStorage.length; i++) {
+    let key = localStorage.key(i)
+    if (!key) {
+      break
+    }
     if (key.startsWith(prefix)) {
       keys.push(key)
     }
