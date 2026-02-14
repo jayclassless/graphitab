@@ -8,6 +8,7 @@ export type Profile = {
   id: string
   name: string
   url: string
+  headers?: Record<string, string>
 }
 
 const DEFAULT: Profile[] = [
@@ -45,21 +46,31 @@ export async function remove(id: string): Promise<void> {
   createGraphiQLSettingsStorage(id).clear()
 }
 
-export async function update(id: string, name: string, url: string): Promise<Profile> {
+export async function update(
+  id: string,
+  name: string,
+  url: string,
+  headers?: Record<string, string>
+): Promise<Profile> {
   const profiles = await getAll()
   const index = profiles.findIndex((p) => p.id === id)
   if (index === -1) throw new Error(`Profile not found: ${id}`)
-  profiles[index] = { ...profiles[index], name, url }
+  profiles[index] = { ...profiles[index], name, url, headers }
   await profilesStorageItem.setValue(profiles)
   return profiles[index]
 }
 
-export async function create(name: string, url: string): Promise<Profile> {
+export async function create(
+  name: string,
+  url: string,
+  headers?: Record<string, string>
+): Promise<Profile> {
   const profiles = await getAll()
   const profile: Profile = {
     id: uuid(),
     name,
     url,
+    headers,
   }
   profiles.push(profile)
   await profilesStorageItem.setValue(profiles)

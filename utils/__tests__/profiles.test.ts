@@ -156,6 +156,24 @@ describe('profiles', () => {
       const result = await update('swapi', 'New Name', 'https://new.example.com/graphql')
       expect(result.id).toBe('swapi')
     })
+
+    it('updates with headers', async () => {
+      const { update, get } = await importProfiles()
+      const hdrs = { 'X-Api-Key': 'abc123' }
+      await update('swapi', 'SWAPI', 'https://swapi-graphql.netlify.app/graphql', hdrs)
+      const profile = await get('swapi')
+      expect(profile!.headers).toEqual({ 'X-Api-Key': 'abc123' })
+    })
+
+    it('clears headers when updated without them', async () => {
+      const { update, get } = await importProfiles()
+      await update('swapi', 'SWAPI', 'https://swapi-graphql.netlify.app/graphql', {
+        'X-Api-Key': 'abc',
+      })
+      await update('swapi', 'SWAPI', 'https://swapi-graphql.netlify.app/graphql')
+      const profile = await get('swapi')
+      expect(profile!.headers).toBeUndefined()
+    })
   })
 
   describe('create', () => {
@@ -166,6 +184,7 @@ describe('profiles', () => {
         id: 'test-uuid',
         name: 'New API',
         url: 'https://new-api.com/graphql',
+        headers: undefined,
       })
     })
 
@@ -178,7 +197,26 @@ describe('profiles', () => {
         id: 'test-uuid',
         name: 'New API',
         url: 'https://new-api.com/graphql',
+        headers: undefined,
       })
+    })
+
+    it('creates a profile with headers', async () => {
+      const { create } = await importProfiles()
+      const hdrs = { Authorization: 'Bearer token123' }
+      const profile = await create('Authed API', 'https://authed.com/graphql', hdrs)
+      expect(profile).toEqual({
+        id: 'test-uuid',
+        name: 'Authed API',
+        url: 'https://authed.com/graphql',
+        headers: { Authorization: 'Bearer token123' },
+      })
+    })
+
+    it('creates a profile without headers when omitted', async () => {
+      const { create } = await importProfiles()
+      const profile = await create('No Headers', 'https://example.com/graphql')
+      expect(profile.headers).toBeUndefined()
     })
   })
 })

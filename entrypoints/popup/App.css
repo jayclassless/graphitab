@@ -91,3 +91,46 @@ body {
 .popup-btn-add {
   margin-top: var(--px-8);
 }
+
+.popup-headers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-4);
+}
+
+.popup-header-row {
+  display: flex;
+  gap: var(--px-4);
+  align-items: center;
+}
+
+.popup-header-key,
+.popup-header-value {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-hint);
+}
+
+.popup-header-remove {
+  all: unset;
+  padding: var(--px-4) var(--px-8);
+  border-radius: var(--border-radius-4);
+  color: hsla(var(--color-neutral), var(--alpha-secondary));
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.popup-header-remove:hover {
+  background: hsla(var(--color-error), var(--alpha-background-light));
+  color: hsl(var(--color-error));
+}
+
+.popup-header-remove:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}
+
+.popup-btn-add-header {
+  font-size: var(--font-size-hint);
+  align-self: flex-start;
+}

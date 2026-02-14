@@ -55,7 +55,7 @@ export default function App() {
   }, [profile])
 
   const fetcher = useMemo(
-    () => (profile ? createGraphiQLFetcher({ url: profile.url }) : null),
+    () => (profile ? createGraphiQLFetcher({ url: profile.url, headers: profile.headers }) : null),
     [profile]
   )
 

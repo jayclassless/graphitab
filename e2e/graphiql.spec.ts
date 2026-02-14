@@ -56,6 +56,53 @@ test.describe('GraphiQL Page', () => {
   })
 })
 
+test.describe('Profile headers', () => {
+  test('sends custom headers with GraphQL requests', async ({ page, extensionId }) => {
+    // Create a profile with a custom header via the popup
+    await page.goto(`chrome-extension://${extensionId}/popup.html`)
+    await page.getByText('+ New Profile').click()
+    await page.getByPlaceholder('Name').fill('Countries With Headers')
+    await page
+      .getByPlaceholder('GraphQL endpoint URL')
+      .fill('https://countries.trevorblades.com/graphql')
+    await page.getByText('+ Add Header').click()
+    await page.getByPlaceholder('Header name').fill('X-Test-Header')
+    await page.getByPlaceholder('Value').fill('e2e-test-value')
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await expect(page.getByText('Countries With Headers')).toBeVisible()
+
+    // Get the profile ID from the link href
+    const href = await page
+      .locator('.popup-profile-item')
+      .filter({ hasText: 'Countries With Headers' })
+      .locator('a')
+      .getAttribute('href')
+    const profileId = new URLSearchParams(href!.split('?')[1]).get('profile')!
+
+    // Navigate to GraphiQL for this profile
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=${profileId}`)
+    await expect(page.locator('.graphiql-execute-button')).toBeVisible({
+      timeout: 15_000,
+    })
+
+    // Intercept the GraphQL request and capture headers
+    const requestPromise = page.waitForRequest(
+      (req) => req.url() === 'https://countries.trevorblades.com/graphql' && req.method() === 'POST'
+    )
+
+    // Type and execute a query
+    const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')
+    await queryEditor.click({ force: true })
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('{ countries { name } }', { delay: 10 })
+    await page.locator('.graphiql-execute-button').click()
+
+    const request = await requestPromise
+    expect(request.headers()['x-test-header']).toBe('e2e-test-value')
+  })
+})
+
 test.describe('Saved Queries', () => {
   test.beforeEach(async ({ page, extensionId }) => {
     await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)

@@ -21,7 +21,7 @@ test.describe('Popup', () => {
     await page.getByPlaceholder('Name').fill('Test')
     await page.getByPlaceholder('GraphQL endpoint URL').fill('not-a-url')
 
-    await expect(page.getByRole('button', { name: 'Add' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeDisabled()
     await expect(page.getByPlaceholder('GraphQL endpoint URL')).toHaveClass(/popup-input-invalid/)
   })
 
@@ -29,7 +29,7 @@ test.describe('Popup', () => {
     await page.getByText('+ New Profile').click()
     await page.getByPlaceholder('Name').fill('Test API')
     await page.getByPlaceholder('GraphQL endpoint URL').fill('https://example.com/graphql')
-    await page.getByRole('button', { name: 'Add' }).click()
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
 
     await expect(page.getByPlaceholder('Name')).not.toBeVisible()
     await expect(page.getByText('Test API')).toBeVisible()
@@ -63,11 +63,90 @@ test.describe('Popup', () => {
     await expect(page.locator('.popup-profile-item')).toHaveCount(itemCount - 1)
   })
 
+  test('add and remove header rows', async ({ page }) => {
+    await page.getByText('+ New Profile').click()
+    await page.getByText('+ Add Header').click()
+
+    await expect(page.getByPlaceholder('Header name')).toBeVisible()
+    await expect(page.getByPlaceholder('Value')).toBeVisible()
+
+    // Add a second row
+    await page.getByText('+ Add Header').click()
+    await expect(page.getByPlaceholder('Header name').first()).toBeVisible()
+    await expect(page.getByPlaceholder('Header name').nth(1)).toBeVisible()
+
+    // Remove first row
+    await page.getByTitle('Remove header').first().click()
+    await expect(page.getByPlaceholder('Header name')).toHaveCount(1)
+  })
+
+  test('create a profile with headers', async ({ page }) => {
+    await page.getByText('+ New Profile').click()
+    await page.getByPlaceholder('Name').fill('Authed API')
+    await page.getByPlaceholder('GraphQL endpoint URL').fill('https://example.com/graphql')
+
+    await page.getByText('+ Add Header').click()
+    await page.getByPlaceholder('Header name').fill('Authorization')
+    await page.getByPlaceholder('Value').fill('Bearer my-token')
+
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await expect(page.getByPlaceholder('Name')).not.toBeVisible()
+    await expect(page.getByText('Authed API')).toBeVisible()
+  })
+
+  test('headers pre-fill when editing a profile', async ({ page }) => {
+    // Create a profile with headers first
+    await page.getByText('+ New Profile').click()
+    await page.getByPlaceholder('Name').fill('Headers Test')
+    await page.getByPlaceholder('GraphQL endpoint URL').fill('https://example.com/graphql')
+    await page.getByText('+ Add Header').click()
+    await page.getByPlaceholder('Header name').fill('X-Custom')
+    await page.getByPlaceholder('Value').fill('custom-value')
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await expect(page.getByText('Headers Test')).toBeVisible()
+
+    // Edit the profile and verify headers are pre-filled
+    await page
+      .locator('.popup-profile-item')
+      .filter({ hasText: 'Headers Test' })
+      .getByTitle('Edit')
+      .click()
+
+    await expect(page.getByPlaceholder('Header name')).toHaveValue('X-Custom')
+    await expect(page.getByPlaceholder('Value')).toHaveValue('custom-value')
+  })
+
+  test('headers persist across popup reopens', async ({ page, extensionId }) => {
+    // Create a profile with headers
+    await page.getByText('+ New Profile').click()
+    await page.getByPlaceholder('Name').fill('Persistent Headers')
+    await page.getByPlaceholder('GraphQL endpoint URL').fill('https://example.com/graphql')
+    await page.getByText('+ Add Header').click()
+    await page.getByPlaceholder('Header name').fill('X-Persist')
+    await page.getByPlaceholder('Value').fill('persist-value')
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await expect(page.getByText('Persistent Headers')).toBeVisible()
+
+    // Reload popup
+    await page.goto(`chrome-extension://${extensionId}/popup.html`)
+    await expect(page.getByText('Persistent Headers')).toBeVisible()
+
+    // Edit and verify headers survived
+    await page
+      .locator('.popup-profile-item')
+      .filter({ hasText: 'Persistent Headers' })
+      .getByTitle('Edit')
+      .click()
+
+    await expect(page.getByPlaceholder('Header name')).toHaveValue('X-Persist')
+    await expect(page.getByPlaceholder('Value')).toHaveValue('persist-value')
+  })
+
   test('profile data persists across popup reopens', async ({ page, extensionId }) => {
     await page.getByText('+ New Profile').click()
     await page.getByPlaceholder('Name').fill('Persistent API')
     await page.getByPlaceholder('GraphQL endpoint URL').fill('https://example.com/graphql')
-    await page.getByRole('button', { name: 'Add' }).click()
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
     await expect(page.getByText('Persistent API')).toBeVisible()
 
     // Reload the popup (simulates close and reopen)

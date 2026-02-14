@@ -134,7 +134,26 @@ describe('GraphiQL App', () => {
     mockGetProfile.mockResolvedValue(mockProfile)
     render(<App />)
     await waitFor(() => {
-      expect(mockCreateFetcher).toHaveBeenCalledWith({ url: 'https://test.com/graphql' })
+      expect(mockCreateFetcher).toHaveBeenCalledWith({
+        url: 'https://test.com/graphql',
+        headers: undefined,
+      })
+    })
+  })
+
+  it('creates fetcher with profile headers when present', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    const profileWithHeaders: Profile = {
+      ...mockProfile,
+      headers: { Authorization: 'Bearer token123' },
+    }
+    mockGetProfile.mockResolvedValue(profileWithHeaders)
+    render(<App />)
+    await waitFor(() => {
+      expect(mockCreateFetcher).toHaveBeenCalledWith({
+        url: 'https://test.com/graphql',
+        headers: { Authorization: 'Bearer token123' },
+      })
     })
   })
 

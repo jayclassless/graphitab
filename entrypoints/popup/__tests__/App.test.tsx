@@ -12,14 +12,20 @@ const mockProfiles: Profile[] = [
 
 const mockGetAll = vi.fn<() => Promise<Profile[]>>()
 const mockRemove = vi.fn<(id: string) => Promise<void>>()
-const mockCreate = vi.fn<(name: string, url: string) => Promise<Profile>>()
-const mockUpdate = vi.fn<(id: string, name: string, url: string) => Promise<Profile>>()
+const mockCreate =
+  vi.fn<(name: string, url: string, headers?: Record<string, string>) => Promise<Profile>>()
+const mockUpdate =
+  vi.fn<
+    (id: string, name: string, url: string, headers?: Record<string, string>) => Promise<Profile>
+  >()
 
 vi.mock('~/utils/profiles', () => ({
   getAll: () => mockGetAll(),
   remove: (id: string) => mockRemove(id),
-  create: (name: string, url: string) => mockCreate(name, url),
-  update: (id: string, name: string, url: string) => mockUpdate(id, name, url),
+  create: (name: string, url: string, headers?: Record<string, string>) =>
+    mockCreate(name, url, headers),
+  update: (id: string, name: string, url: string, headers?: Record<string, string>) =>
+    mockUpdate(id, name, url, headers),
 }))
 
 const mockTabsQuery = vi.fn<(queryInfo: object) => Promise<{ id: number }[]>>()
@@ -148,7 +154,7 @@ describe('Popup App', () => {
         'https://example.com/graphql'
       )
       await user.click(screen.getByText('Add'))
-      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql')
+      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql', undefined)
       expect(mockGetAll).toHaveBeenCalledTimes(2)
     })
 
@@ -160,7 +166,7 @@ describe('Popup App', () => {
         'https://example.com/graphql'
       )
       await user.type(screen.getByPlaceholderText('Name'), 'Test{Enter}')
-      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql')
+      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql', undefined)
     })
 
     it('submits on Enter in URL field', async () => {
@@ -171,7 +177,7 @@ describe('Popup App', () => {
         screen.getByPlaceholderText('GraphQL endpoint URL'),
         'https://example.com/graphql{Enter}'
       )
-      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql')
+      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql', undefined)
     })
 
     it('does not create on Enter when form is invalid', async () => {
@@ -230,7 +236,12 @@ describe('Popup App', () => {
         'https://updated.com/graphql'
       )
       await user.click(screen.getByText('Save'))
-      expect(mockUpdate).toHaveBeenCalledWith('a', 'Updated Alpha', 'https://updated.com/graphql')
+      expect(mockUpdate).toHaveBeenCalledWith(
+        'a',
+        'Updated Alpha',
+        'https://updated.com/graphql',
+        undefined
+      )
       expect(mockGetAll).toHaveBeenCalledTimes(2)
     })
 
@@ -280,7 +291,12 @@ describe('Popup App', () => {
         screen.getByPlaceholderText('GraphQL endpoint URL'),
         'https://updated.com/graphql{Enter}'
       )
-      expect(mockUpdate).toHaveBeenCalledWith('a', 'Updated', 'https://updated.com/graphql')
+      expect(mockUpdate).toHaveBeenCalledWith(
+        'a',
+        'Updated',
+        'https://updated.com/graphql',
+        undefined
+      )
     })
 
     it('switches from create to edit mode', async () => {
@@ -308,6 +324,93 @@ describe('Popup App', () => {
       await waitFor(() => {
         expect(screen.getByText('Failed to update profile')).toBeInTheDocument()
       })
+    })
+  })
+
+  describe('headers', () => {
+    it('shows "+ Add Header" button when form is open', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      expect(screen.getByText('+ Add Header')).toBeInTheDocument()
+    })
+
+    it('adds a header row when "+ Add Header" is clicked', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.click(screen.getByText('+ Add Header'))
+      expect(screen.getByPlaceholderText('Header name')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Value')).toBeInTheDocument()
+    })
+
+    it('removes a header row when remove button is clicked', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.click(screen.getByText('+ Add Header'))
+      expect(screen.getByPlaceholderText('Header name')).toBeInTheDocument()
+      await user.click(screen.getByTitle('Remove header'))
+      expect(screen.queryByPlaceholderText('Header name')).not.toBeInTheDocument()
+    })
+
+    it('pre-fills headers when editing a profile with headers', async () => {
+      mockGetAll.mockResolvedValue([
+        {
+          id: 'h',
+          name: 'Header API',
+          url: 'https://header.com/graphql',
+          headers: { Authorization: 'Bearer xyz' },
+        },
+      ])
+      const { user } = await renderApp()
+      await user.click(screen.getByTitle('Edit'))
+      expect(screen.getByPlaceholderText('Header name')).toHaveValue('Authorization')
+      expect(screen.getByPlaceholderText('Value')).toHaveValue('Bearer xyz')
+    })
+
+    it('passes headers to create', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Test')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      await user.click(screen.getByText('+ Add Header'))
+      await user.type(screen.getByPlaceholderText('Header name'), 'Authorization')
+      await user.type(screen.getByPlaceholderText('Value'), 'Bearer token')
+      await user.click(screen.getByText('Add'))
+      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql', {
+        Authorization: 'Bearer token',
+      })
+    })
+
+    it('passes headers to update', async () => {
+      mockGetAll.mockResolvedValue([
+        { id: 'a', name: 'Alpha API', url: 'https://alpha.com/graphql' },
+      ])
+      const { user } = await renderApp()
+      await user.click(screen.getByTitle('Edit'))
+      await user.click(screen.getByText('+ Add Header'))
+      await user.type(screen.getByPlaceholderText('Header name'), 'X-Key')
+      await user.type(screen.getByPlaceholderText('Value'), 'val')
+      await user.click(screen.getByText('Save'))
+      expect(mockUpdate).toHaveBeenCalledWith('a', 'Alpha API', 'https://alpha.com/graphql', {
+        'X-Key': 'val',
+      })
+    })
+
+    it('filters out headers with empty keys', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Test')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      await user.click(screen.getByText('+ Add Header'))
+      // Leave key empty, only type value
+      await user.type(screen.getByPlaceholderText('Value'), 'some-value')
+      await user.click(screen.getByText('Add'))
+      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql', undefined)
     })
   })
 

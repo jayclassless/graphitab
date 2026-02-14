@@ -25,6 +25,7 @@ export default function App() {
   const [formMode, setFormMode] = useState<FormMode>({ kind: 'closed' })
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
+  const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>([])
   const [error, setError] = useState<string | null>(null)
 
   const sortedProfiles = useMemo(
@@ -50,9 +51,16 @@ export default function App() {
     loadProfiles()
   }, [])
 
+  const headersToRecord = (): Record<string, string> | undefined => {
+    const filtered = headers.filter((h) => h.key.trim() !== '')
+    if (filtered.length === 0) return undefined
+    return Object.fromEntries(filtered.map((h) => [h.key.trim(), h.value]))
+  }
+
   const resetForm = () => {
     setName('')
     setUrl('')
+    setHeaders([])
     setFormMode({ kind: 'closed' })
   }
 
@@ -79,7 +87,7 @@ export default function App() {
     setError(null)
 
     try {
-      await profiles.create(trimmedName, trimmedUrl)
+      await profiles.create(trimmedName, trimmedUrl, headersToRecord())
       resetForm()
     } catch {
       setError('Failed to create profile')
@@ -90,6 +98,9 @@ export default function App() {
   const handleEdit = (profile: profiles.Profile) => {
     setName(profile.name)
     setUrl(profile.url)
+    setHeaders(
+      profile.headers ? Object.entries(profile.headers).map(([key, value]) => ({ key, value })) : []
+    )
     setFormMode({ kind: 'edit', profileId: profile.id })
   }
 
@@ -98,7 +109,7 @@ export default function App() {
     setError(null)
 
     try {
-      await profiles.update(formMode.profileId, trimmedName, trimmedUrl)
+      await profiles.update(formMode.profileId, trimmedName, trimmedUrl, headersToRecord())
       resetForm()
     } catch {
       setError('Failed to update profile')
@@ -165,6 +176,48 @@ export default function App() {
               if (e.key === 'Enter') handleSubmit()
             }}
           />
+          <div className="popup-headers">
+            {headers.map((header, index) => (
+              <div key={index} className="popup-header-row">
+                <input
+                  className="gt-input popup-header-key"
+                  type="text"
+                  placeholder="Header name"
+                  value={header.key}
+                  onChange={(e) => {
+                    const next = [...headers]
+                    next[index] = { ...next[index], key: e.target.value }
+                    setHeaders(next)
+                  }}
+                />
+                <input
+                  className="gt-input popup-header-value"
+                  type="text"
+                  placeholder="Value"
+                  value={header.value}
+                  onChange={(e) => {
+                    const next = [...headers]
+                    next[index] = { ...next[index], value: e.target.value }
+                    setHeaders(next)
+                  }}
+                />
+                <button
+                  className="popup-header-remove"
+                  onClick={() => setHeaders(headers.filter((_, i) => i !== index))}
+                  title="Remove header"
+                  aria-label="Remove header"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+            <button
+              className="gt-btn popup-btn-add-header"
+              onClick={() => setHeaders([...headers, { key: '', value: '' }])}
+            >
+              + Add Header
+            </button>
+          </div>
           <div className="popup-form-actions">
             <button
               className="gt-btn popup-btn-primary"
