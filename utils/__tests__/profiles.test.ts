@@ -176,6 +176,50 @@ describe('profiles', () => {
     })
   })
 
+  describe('watch', () => {
+    it('calls the callback when profiles change', async () => {
+      const { watch, update } = await importProfiles()
+      const callback = vi.fn()
+      const unwatch = watch(callback)
+
+      await update('swapi', 'Updated SWAPI', 'https://updated.example.com/graphql')
+
+      expect(callback).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ id: 'swapi', name: 'Updated SWAPI' })]),
+        expect.any(Array)
+      )
+
+      unwatch()
+    })
+
+    it('returns an unwatch function that stops notifications', async () => {
+      const { watch, update } = await importProfiles()
+      const callback = vi.fn()
+      const unwatch = watch(callback)
+
+      unwatch()
+
+      await update('swapi', 'Updated SWAPI', 'https://updated.example.com/graphql')
+      expect(callback).not.toHaveBeenCalled()
+    })
+
+    it('provides default profiles when values are null', async () => {
+      const { watch } = await importProfiles()
+      const callback = vi.fn()
+      watch(callback)
+
+      // Set profiles then remove to trigger watch with null newValue
+      await fakeBrowser.storage.sync.set({
+        profiles: [{ id: 'x', name: 'X', url: 'https://x.com/graphql' }],
+      })
+      await fakeBrowser.storage.sync.remove('profiles')
+
+      expect(callback).toHaveBeenCalled()
+      const lastCall = callback.mock.calls[callback.mock.calls.length - 1]
+      expect(lastCall[0]).toEqual(DEFAULT_PROFILES)
+    })
+  })
+
   describe('create', () => {
     it('creates a new profile with a generated id', async () => {
       const { create } = await importProfiles()

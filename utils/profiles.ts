@@ -60,6 +60,14 @@ export async function update(
   return profiles[index]
 }
 
+export function watch(
+  callback: (newProfiles: Profile[], oldProfiles: Profile[]) => void
+): () => void {
+  return profilesStorageItem.watch((newValue, oldValue) => {
+    callback(newValue ?? DEFAULT, oldValue ?? DEFAULT)
+  })
+}
+
 export async function create(
   name: string,
   url: string,

@@ -1,10 +1,11 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 import type { Profile } from '~/utils/profiles'
 
 const mockGetProfile = vi.hoisted(() => vi.fn())
+const mockWatchProfiles = vi.hoisted(() => vi.fn(() => vi.fn()))
 const mockCreateFetcher = vi.hoisted(() => vi.fn((opts: unknown) => opts))
 const mockCreateSettingsStorage = vi.hoisted(() => vi.fn(() => ({})))
 const mockCreateSavedQueriesStorage = vi.hoisted(() =>
@@ -19,6 +20,7 @@ const mockCreateSavedQueriesStorage = vi.hoisted(() =>
 
 vi.mock('~/utils/profiles', () => ({
   get: mockGetProfile,
+  watch: mockWatchProfiles,
 }))
 
 vi.mock('~/utils/queries_storage', () => ({
@@ -174,6 +176,122 @@ describe('GraphiQL App', () => {
       const plugins = mockGraphiQL.mock.calls[0][0].plugins
       expect(plugins).toContainEqual(expect.objectContaining({ title: 'Saved Queries' }))
     })
+  })
+
+  it('registers a profile watcher on mount', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+    render(<App />)
+    await waitFor(() => {
+      expect(mockWatchProfiles).toHaveBeenCalledWith(expect.any(Function))
+    })
+  })
+
+  it('does not register a watcher when no profile param', async () => {
+    mockGetProfile.mockResolvedValue(undefined)
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
+    })
+    expect(mockWatchProfiles).not.toHaveBeenCalled()
+  })
+
+  it('unregisters the watcher on unmount', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+    const mockUnwatch = vi.fn()
+    mockWatchProfiles.mockReturnValue(mockUnwatch)
+    const { unmount } = render(<App />)
+    await waitFor(() => {
+      expect(mockWatchProfiles).toHaveBeenCalled()
+    })
+    unmount()
+    expect(mockUnwatch).toHaveBeenCalled()
+  })
+
+  it('updates profile when storage changes', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+
+    let watchCallback: (profiles: Profile[]) => void = () => {}
+    mockWatchProfiles.mockImplementation(((cb: (profiles: Profile[]) => void) => {
+      watchCallback = cb
+      return vi.fn()
+    }) as typeof mockWatchProfiles)
+
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    const updatedProfile: Profile = {
+      id: 'test-id',
+      name: 'Updated API',
+      url: 'https://updated.com/graphql',
+    }
+
+    mockCreateFetcher.mockClear()
+    act(() => {
+      watchCallback([updatedProfile])
+    })
+
+    await waitFor(() => {
+      expect(document.title).toBe('Updated API - GraphiTab')
+    })
+    expect(mockCreateFetcher).toHaveBeenCalledWith({
+      url: 'https://updated.com/graphql',
+      headers: undefined,
+    })
+  })
+
+  it('skips update when profile data has not changed', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+
+    let watchCallback: (profiles: Profile[]) => void = () => {}
+    mockWatchProfiles.mockImplementation(((cb: (profiles: Profile[]) => void) => {
+      watchCallback = cb
+      return vi.fn()
+    }) as typeof mockWatchProfiles)
+
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    // Fire the watch callback with the same profile data
+    mockCreateFetcher.mockClear()
+    act(() => {
+      watchCallback([{ ...mockProfile }])
+    })
+
+    // Title should remain the same, fetcher should not be recreated
+    expect(document.title).toBe('Test API - GraphiTab')
+    expect(mockCreateFetcher).not.toHaveBeenCalled()
+  })
+
+  it('ignores watch callback when current profile is not in the list', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+
+    let watchCallback: (profiles: Profile[]) => void = () => {}
+    mockWatchProfiles.mockImplementation(((cb: (profiles: Profile[]) => void) => {
+      watchCallback = cb
+      return vi.fn()
+    }) as typeof mockWatchProfiles)
+
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    mockCreateFetcher.mockClear()
+    act(() => {
+      watchCallback([{ id: 'other-id', name: 'Other', url: 'https://other.com/graphql' }])
+    })
+
+    expect(document.title).toBe('Test API - GraphiTab')
+    expect(mockCreateFetcher).not.toHaveBeenCalled()
   })
 })
 

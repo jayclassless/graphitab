@@ -5,7 +5,7 @@ import { createGraphiQLFetcher } from '@graphiql/toolkit'
 import { GraphiQL } from 'graphiql'
 import { useState, useEffect, useMemo } from 'react'
 
-import { get as getProfile, type Profile } from '~/utils/profiles'
+import { get as getProfile, watch as watchProfiles, type Profile } from '~/utils/profiles'
 import { createSavedQueriesStorage } from '~/utils/queries_storage'
 import { createGraphiQLSettingsStorage } from '~/utils/settings_storage'
 
@@ -46,6 +46,26 @@ export default function App() {
     } else {
       setLoading(false)
     }
+  }, [profileId])
+
+  useEffect(() => {
+    if (!profileId) return
+    return watchProfiles((newProfiles) => {
+      const updated = newProfiles.find((p) => p.id === profileId)
+      if (updated) {
+        setProfile((prev) => {
+          if (
+            prev &&
+            prev.name === updated.name &&
+            prev.url === updated.url &&
+            JSON.stringify(prev.headers) === JSON.stringify(updated.headers)
+          ) {
+            return prev
+          }
+          return updated
+        })
+      }
+    })
   }, [profileId])
 
   useEffect(() => {
