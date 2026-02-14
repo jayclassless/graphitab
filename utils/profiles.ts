@@ -60,11 +60,15 @@ export async function update(
   return profiles[index]
 }
 
+export function resolveProfiles(value: Profile[] | null): Profile[] {
+  return value ?? DEFAULT
+}
+
 export function watch(
   callback: (newProfiles: Profile[], oldProfiles: Profile[]) => void
 ): () => void {
   return profilesStorageItem.watch((newValue, oldValue) => {
-    callback(newValue ?? DEFAULT, oldValue ?? DEFAULT)
+    callback(resolveProfiles(newValue), resolveProfiles(oldValue))
   })
 }
 

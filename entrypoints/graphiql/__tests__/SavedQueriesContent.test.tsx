@@ -240,6 +240,19 @@ describe('SavedQueriesContent', () => {
       expect(screen.getByTitle('Descending')).toBeInTheDocument()
     })
 
+    it('toggles sort direction back to ascending', async () => {
+      const { user } = await renderContent()
+      // asc → desc
+      await user.click(screen.getByTitle('Ascending'))
+      expect(screen.getByTitle('Descending')).toBeInTheDocument()
+      // desc → asc
+      await user.click(screen.getByTitle('Descending'))
+      expect(screen.getByTitle('Ascending')).toBeInTheDocument()
+      const buttons = screen.getAllByRole('button', { name: /Query/ })
+      expect(buttons[0]).toHaveTextContent('Alpha Query')
+      expect(buttons[1]).toHaveTextContent('Bravo Query')
+    })
+
     it('sorts by date descending', async () => {
       const { user } = await renderContent()
       await user.selectOptions(screen.getByRole('combobox'), 'createdAt')

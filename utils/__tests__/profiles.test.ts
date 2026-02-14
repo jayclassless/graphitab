@@ -203,20 +203,15 @@ describe('profiles', () => {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('provides default profiles when values are null', async () => {
-      const { watch } = await importProfiles()
-      const callback = vi.fn()
-      watch(callback)
+    it('falls back to defaults when watch receives null values', async () => {
+      const { resolveProfiles } = await importProfiles()
+      expect(resolveProfiles(null)).toEqual(DEFAULT_PROFILES)
+    })
 
-      // Set profiles then remove to trigger watch with null newValue
-      await fakeBrowser.storage.sync.set({
-        profiles: [{ id: 'x', name: 'X', url: 'https://x.com/graphql' }],
-      })
-      await fakeBrowser.storage.sync.remove('profiles')
-
-      expect(callback).toHaveBeenCalled()
-      const lastCall = callback.mock.calls[callback.mock.calls.length - 1]
-      expect(lastCall[0]).toEqual(DEFAULT_PROFILES)
+    it('returns profiles as-is when watch receives non-null values', async () => {
+      const { resolveProfiles } = await importProfiles()
+      const custom = [{ id: 'x', name: 'X', url: 'https://x.com/graphql' }]
+      expect(resolveProfiles(custom)).toBe(custom)
     })
   })
 

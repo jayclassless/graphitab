@@ -281,6 +281,14 @@ describe('Popup App', () => {
       expect(screen.getByText('Save')).toBeDisabled()
     })
 
+    it('does not update when name is empty and Enter is pressed', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.clear(screen.getByPlaceholderText('Name'))
+      await user.type(screen.getByPlaceholderText('Name'), '{Enter}')
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
     it('submits on Enter in URL field during edit', async () => {
       const { user } = await renderApp()
       await user.click(screen.getAllByTitle('Edit')[0])

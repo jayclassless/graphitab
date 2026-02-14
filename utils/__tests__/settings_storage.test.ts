@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { createGraphiQLSettingsStorage } from '../settings_storage'
 
@@ -82,6 +82,20 @@ describe('createGraphiQLSettingsStorage', () => {
       expect(localStorage.getItem('graphitab:ns:b')).toBeNull()
       expect(localStorage.getItem('graphitab:other:c')).toBe('3')
     })
+  })
+
+  it('handles localStorage.key() returning null mid-iteration', () => {
+    localStorage.setItem('graphitab:ns:a', '1')
+    const originalKey = localStorage.key.bind(localStorage)
+    vi.spyOn(localStorage, 'key').mockImplementation((index: number) => {
+      if (index === 0) return null
+      return originalKey(index)
+    })
+
+    const storage = createGraphiQLSettingsStorage('ns')
+    expect(storage.length).toBe(0)
+
+    vi.restoreAllMocks()
   })
 
   it('isolates two storages with different namespaces', () => {
