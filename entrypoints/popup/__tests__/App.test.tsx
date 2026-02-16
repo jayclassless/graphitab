@@ -28,8 +28,17 @@ vi.mock('~/utils/profiles', () => ({
     mockUpdate(id, name, url, headers),
 }))
 
+const mockTabsCreate = vi.fn<(options: { url: string; windowId?: number }) => Promise<unknown>>()
+const mockWindowsGetCurrent = vi.fn<() => Promise<{ id: number }>>()
+
 vi.mock('wxt/browser', () => ({
-  browser: {},
+  browser: {
+    tabs: {
+      create: (options: { url: string; windowId?: number }) => mockTabsCreate(options),
+    },
+    windows: { getCurrent: () => mockWindowsGetCurrent() },
+    runtime: { getURL: (path: string) => `chrome-extension://test-id${path}` },
+  },
 }))
 
 // Stub CSS imports
@@ -51,6 +60,8 @@ describe('Popup App', () => {
     mockRemove.mockResolvedValue(undefined)
     mockCreate.mockResolvedValue({ id: 'new', name: 'New', url: 'https://new.com/graphql' })
     mockUpdate.mockResolvedValue({ id: 'a', name: 'Updated', url: 'https://updated.com/graphql' })
+    mockTabsCreate.mockResolvedValue({})
+    mockWindowsGetCurrent.mockResolvedValue({ id: 42 })
   })
 
   async function renderApp() {
@@ -74,6 +85,18 @@ describe('Popup App', () => {
       await renderApp()
       const link = screen.getByText('Alpha API')
       expect(link).toHaveAttribute('href', '/graphiql.html?profile=a')
+    })
+
+    it('opens profile in the current window via browser.tabs.create', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('Alpha API'))
+      expect(mockWindowsGetCurrent).toHaveBeenCalled()
+      await waitFor(() => {
+        expect(mockTabsCreate).toHaveBeenCalledWith({
+          url: 'chrome-extension://test-id/graphiql.html?profile=a',
+          windowId: 42,
+        })
+      })
     })
 
     it('shows empty message when no profiles exist', async () => {

@@ -6,6 +6,7 @@ export default defineConfig({
   manifest: {
     name: 'GraphiTab',
     permissions: ['storage'],
+    incognito: 'split',
   },
   autoIcons: {
     developmentIndicator: 'overlay',

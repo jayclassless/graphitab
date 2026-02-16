@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { browser } from 'wxt/browser'
 
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import * as profiles from '~/utils/profiles'
@@ -143,7 +144,18 @@ export default function App() {
             const params = new URLSearchParams({ profile: profile.id }).toString()
             return (
               <div key={profile.id} className="popup-profile-item">
-                <a className="gt-list-item" href={`${GRAPHIQL_PATH}?${params}`} target="_blank">
+                <a
+                  className="gt-list-item"
+                  href={`${GRAPHIQL_PATH}?${params}`}
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    const currentWindow = await browser.windows.getCurrent()
+                    browser.tabs.create({
+                      url: browser.runtime.getURL(`${GRAPHIQL_PATH}?${params}`),
+                      windowId: currentWindow.id,
+                    })
+                  }}
+                >
                   {profile.name}
                 </a>
                 <button
