@@ -8,6 +8,11 @@ export default defineConfig({
     homepage_url: 'https://github.com/jayclassless/graphitab',
     permissions: ['storage'],
     incognito: 'split',
+    browser_specific_settings: {
+      gecko: {
+        id: '@graphitab.classless.net',
+      },
+    },
   },
   autoIcons: {
     developmentIndicator: 'overlay',
