@@ -5,6 +5,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   manifest: {
     name: 'GraphiTab',
+    homepage_url: 'https://github.com/jayclassless/graphitab',
     permissions: ['storage'],
     incognito: 'split',
   },
