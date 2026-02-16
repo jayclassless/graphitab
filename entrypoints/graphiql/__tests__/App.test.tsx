@@ -15,12 +15,16 @@ const mockCreateSavedQueriesStorage = vi.hoisted(() =>
     save: vi.fn(),
     remove: vi.fn(),
     clear: vi.fn(),
+    watch: vi.fn(() => vi.fn()),
   }))
 )
+
+const mockRestore = vi.hoisted(() => vi.fn())
 
 vi.mock('~/utils/profiles', () => ({
   get: mockGetProfile,
   watch: mockWatchProfiles,
+  restore: mockRestore,
 }))
 
 vi.mock('~/utils/queries_storage', () => ({
@@ -48,6 +52,7 @@ vi.mock('@graphiql/toolkit', () => ({
 }))
 
 vi.mock('../SavedQueriesContent.css', () => ({}))
+vi.mock('../ProfileDeletedModal.css', () => ({}))
 vi.mock('../App.css', () => ({}))
 vi.mock('~/styles/shared.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
@@ -270,7 +275,7 @@ describe('GraphiQL App', () => {
     expect(mockCreateFetcher).not.toHaveBeenCalled()
   })
 
-  it('ignores watch callback when current profile is not in the list', async () => {
+  it('shows deleted modal when profile is removed from storage', async () => {
     window.history.pushState({}, '', '?profile=test-id')
     mockGetProfile.mockResolvedValue(mockProfile)
 
@@ -285,13 +290,50 @@ describe('GraphiQL App', () => {
       expect(screen.getByTestId('graphiql')).toBeInTheDocument()
     })
 
-    mockCreateFetcher.mockClear()
     act(() => {
       watchCallback([{ id: 'other-id', name: 'Other', url: 'https://other.com/graphql' }])
     })
 
-    expect(document.title).toBe('Test API - GraphiTab')
-    expect(mockCreateFetcher).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByText(/Test API/)).toBeInTheDocument()
+      expect(screen.getByText(/has been deleted/)).toBeInTheDocument()
+    })
+    expect(screen.getByText('Restore')).toBeInTheDocument()
+    expect(screen.getByText('Close Tab')).toBeInTheDocument()
+  })
+
+  it('clears deleted state after restore', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+    mockRestore.mockResolvedValue(undefined)
+
+    let watchCallback: (profiles: Profile[]) => void = () => {}
+    mockWatchProfiles.mockImplementation(((cb: (profiles: Profile[]) => void) => {
+      watchCallback = cb
+      return vi.fn()
+    }) as typeof mockWatchProfiles)
+
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    act(() => {
+      watchCallback([])
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Restore')).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      screen.getByText('Restore').click()
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText('has been deleted.')).not.toBeInTheDocument()
+    })
+    expect(mockRestore).toHaveBeenCalled()
   })
 })
 

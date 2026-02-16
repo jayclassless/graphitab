@@ -156,6 +156,43 @@ describe('createSavedQueriesStorage', () => {
     })
   })
 
+  describe('watch', () => {
+    it('calls the callback when storage changes', async () => {
+      const storage = await createStorage()
+      const { promise, resolve } = Promise.withResolvers<SavedQuery[]>()
+      storage.watch((queries) => resolve(queries))
+
+      await storage.create('My Query', '{ hero { name } }')
+
+      const result = await promise
+      expect(result).toEqual([
+        expect.objectContaining({ name: 'My Query', query: '{ hero { name } }' }),
+      ])
+    })
+
+    it('calls callback with empty array when storage is cleared', async () => {
+      const storage = await createStorage()
+      await storage.create('My Query', '{ a }')
+
+      const callback = vi.fn()
+      storage.watch(callback)
+      await storage.clear()
+
+      expect(callback).toHaveBeenCalledWith([])
+    })
+
+    it('returns an unwatch function that stops notifications', async () => {
+      const storage = await createStorage()
+      const callback = vi.fn()
+      const unwatch = storage.watch(callback)
+
+      unwatch()
+
+      await storage.clear()
+      expect(callback).not.toHaveBeenCalled()
+    })
+  })
+
   it('isolates queries between different profile ids', async () => {
     const s1 = await createStorage('profile-1')
     const s2 = await createStorage('profile-2')

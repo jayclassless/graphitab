@@ -1,0 +1,50 @@
+.profile-deleted-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: hsla(var(--color-neutral), var(--alpha-background-heavy));
+  z-index: 100;
+}
+
+.profile-deleted-modal {
+  background-color: hsl(var(--color-base));
+  border-radius: var(--border-radius-4);
+  padding: var(--px-16);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  color: hsl(var(--color-neutral));
+}
+
+.profile-deleted-modal p {
+  margin: 0 0 var(--px-16);
+}
+
+.profile-deleted-modal-actions {
+  display: flex;
+  gap: var(--px-8);
+  justify-content: center;
+}
+
+.profile-deleted-modal-actions button {
+  padding: var(--px-4) var(--px-12);
+  border-radius: var(--border-radius-4);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+}
+
+.profile-deleted-btn-restore {
+  background-color: hsl(var(--color-primary));
+  color: hsl(var(--color-base));
+}
+
+.profile-deleted-btn-close {
+  background-color: hsla(var(--color-neutral), var(--alpha-background-light));
+  color: hsl(var(--color-neutral));
+}

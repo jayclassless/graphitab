@@ -57,6 +57,7 @@ function createMockStorage(queries = savedQueries): SavedQueriesStorage {
     save: vi.fn().mockResolvedValue(store),
     remove: vi.fn().mockResolvedValue(store),
     clear: vi.fn(),
+    watch: vi.fn(() => vi.fn()),
   }
 }
 

@@ -1,7 +1,7 @@
 import { storage } from '#imports'
 import { v4 as uuid } from 'uuid'
 
-import { createSavedQueriesStorage } from './queries_storage'
+import { createSavedQueriesStorage, type SavedQuery } from './queries_storage'
 import { createGraphiQLSettingsStorage } from './settings_storage'
 
 export type Profile = {
@@ -70,6 +70,16 @@ export function watch(
   return profilesStorageItem.watch((newValue, oldValue) => {
     callback(resolveProfiles(newValue), resolveProfiles(oldValue))
   })
+}
+
+export async function restore(profile: Profile, savedQueries: SavedQuery[]): Promise<void> {
+  const profiles = await getAll()
+  profiles.push(profile)
+  await profilesStorageItem.setValue(profiles)
+  const storage = createSavedQueriesStorage(profile.id)
+  for (const query of savedQueries) {
+    await storage.save(query)
+  }
 }
 
 export async function create(

@@ -3,12 +3,13 @@ import type { GraphiQLPlugin } from '@graphiql/react'
 import { explorerPlugin } from '@graphiql/plugin-explorer'
 import { createGraphiQLFetcher } from '@graphiql/toolkit'
 import { GraphiQL } from 'graphiql'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 import { get as getProfile, watch as watchProfiles, type Profile } from '~/utils/profiles'
-import { createSavedQueriesStorage } from '~/utils/queries_storage'
+import { createSavedQueriesStorage, type SavedQuery } from '~/utils/queries_storage'
 import { createGraphiQLSettingsStorage } from '~/utils/settings_storage'
 
+import ProfileDeletedModal from './ProfileDeletedModal'
 import SavedQueriesContent from './SavedQueriesContent'
 import SavedQueriesIcon from './SavedQueriesIcon'
 import './App.css'
@@ -35,17 +36,35 @@ export default function App() {
 
   const [profile, setProfile] = useState<Profile | undefined>(undefined)
   const [loading, setLoading] = useState(true)
+  const [deleted, setDeleted] = useState<{ profile: Profile; savedQueries: SavedQuery[] } | null>(
+    null
+  )
+  const savedQueriesRef = useRef<SavedQuery[]>([])
 
   useEffect(() => {
     if (profileId) {
       getProfile(profileId)
         .then((p) => {
           setProfile(p)
+          if (p) {
+            createSavedQueriesStorage(p.id)
+              .getAll()
+              .then((queries) => {
+                savedQueriesRef.current = queries
+              })
+          }
         })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
     }
+  }, [profileId])
+
+  useEffect(() => {
+    if (!profileId) return
+    return createSavedQueriesStorage(profileId).watch((queries) => {
+      savedQueriesRef.current = queries
+    })
   }, [profileId])
 
   useEffect(() => {
@@ -63,6 +82,13 @@ export default function App() {
             return prev
           }
           return updated
+        })
+      } else {
+        setProfile((prev) => {
+          if (prev) {
+            setDeleted({ profile: prev, savedQueries: savedQueriesRef.current })
+          }
+          return prev
         })
       }
     })
@@ -100,5 +126,16 @@ export default function App() {
     return <div className="graphiql-container graphiqltab-root">Profile not found</div>
   }
 
-  return <GraphiQL fetcher={fetcher} storage={settingsStorage} plugins={plugins} />
+  return (
+    <>
+      <GraphiQL fetcher={fetcher} storage={settingsStorage} plugins={plugins} />
+      {deleted && (
+        <ProfileDeletedModal
+          profile={deleted.profile}
+          savedQueries={deleted.savedQueries}
+          onRestored={() => setDeleted(null)}
+        />
+      )}
+    </>
+  )
 }

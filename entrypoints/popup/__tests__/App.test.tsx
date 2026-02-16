@@ -28,19 +28,8 @@ vi.mock('~/utils/profiles', () => ({
     mockUpdate(id, name, url, headers),
 }))
 
-const mockTabsQuery = vi.fn<(queryInfo: object) => Promise<{ id: number }[]>>()
-const mockTabsRemove = vi.fn<(tabIds: number[]) => Promise<void>>()
-
 vi.mock('wxt/browser', () => ({
-  browser: {
-    runtime: {
-      getURL: (path: string) => `chrome-extension://test-id${path}`,
-    },
-    tabs: {
-      query: (queryInfo: object) => mockTabsQuery(queryInfo),
-      remove: (tabIds: number[]) => mockTabsRemove(tabIds),
-    },
-  },
+  browser: {},
 }))
 
 // Stub CSS imports
@@ -62,8 +51,6 @@ describe('Popup App', () => {
     mockRemove.mockResolvedValue(undefined)
     mockCreate.mockResolvedValue({ id: 'new', name: 'New', url: 'https://new.com/graphql' })
     mockUpdate.mockResolvedValue({ id: 'a', name: 'Updated', url: 'https://updated.com/graphql' })
-    mockTabsQuery.mockResolvedValue([])
-    mockTabsRemove.mockResolvedValue(undefined)
   })
 
   async function renderApp() {
@@ -448,24 +435,12 @@ describe('Popup App', () => {
       expect(mockGetAll).toHaveBeenCalledTimes(2)
     })
 
-    it('closes open tabs for the deleted profile', async () => {
-      mockTabsQuery.mockResolvedValue([{ id: 10 }, { id: 20 }])
+    it('reloads profiles after deletion', async () => {
       const { user } = await renderApp()
       await user.click(screen.getAllByTitle('Delete')[0])
       await user.click(screen.getByText('Confirm'))
-      expect(mockTabsQuery).toHaveBeenCalledWith({
-        url: 'chrome-extension://test-id/graphiql.html?profile=a',
-      })
-      expect(mockTabsRemove).toHaveBeenCalledWith([10, 20])
-    })
-
-    it('does not call tabs.remove when no tabs are open', async () => {
-      mockTabsQuery.mockResolvedValue([])
-      const { user } = await renderApp()
-      await user.click(screen.getAllByTitle('Delete')[0])
-      await user.click(screen.getByText('Confirm'))
-      expect(mockTabsQuery).toHaveBeenCalled()
-      expect(mockTabsRemove).not.toHaveBeenCalled()
+      expect(mockRemove).toHaveBeenCalledWith('a')
+      expect(mockGetAll).toHaveBeenCalledTimes(2)
     })
   })
 

@@ -215,6 +215,48 @@ describe('profiles', () => {
     })
   })
 
+  describe('restore', () => {
+    it('re-adds a profile to storage', async () => {
+      const { restore, getAll, remove } = await importProfiles()
+      const profile = { id: 'swapi', name: 'SWAPI', url: 'https://swapi.dev/graphql' }
+      await remove('swapi')
+      expect((await getAll()).find((p) => p.id === 'swapi')).toBeUndefined()
+      await restore(profile, [])
+      expect((await getAll()).find((p) => p.id === 'swapi')).toEqual(profile)
+    })
+
+    it('restores saved queries for the profile', async () => {
+      const { restore, remove } = await importProfiles()
+      const { createSavedQueriesStorage } = await import('../queries_storage')
+      const profile = { id: 'swapi', name: 'SWAPI', url: 'https://swapi.dev/graphql' }
+      const savedQuery = {
+        id: 'q1',
+        name: 'My Query',
+        query: '{ hero { name } }',
+        createdAt: 1000,
+      }
+      await remove('swapi')
+      await restore(profile, [savedQuery])
+      const storage = createSavedQueriesStorage('swapi')
+      const queries = await storage.getAll()
+      expect(queries).toEqual([savedQuery])
+    })
+
+    it('restores multiple saved queries', async () => {
+      const { restore, remove } = await importProfiles()
+      const { createSavedQueriesStorage } = await import('../queries_storage')
+      const profile = { id: 'swapi', name: 'SWAPI', url: 'https://swapi.dev/graphql' }
+      const queries = [
+        { id: 'q1', name: 'Query 1', query: '{ a }', createdAt: 1000 },
+        { id: 'q2', name: 'Query 2', query: '{ b }', createdAt: 2000 },
+      ]
+      await remove('swapi')
+      await restore(profile, queries)
+      const storage = createSavedQueriesStorage('swapi')
+      expect(await storage.getAll()).toEqual(queries)
+    })
+  })
+
   describe('create', () => {
     it('creates a new profile with a generated id', async () => {
       const { create } = await importProfiles()

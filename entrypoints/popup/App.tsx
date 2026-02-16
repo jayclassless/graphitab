@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { browser } from 'wxt/browser'
 
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import * as profiles from '~/utils/profiles'
@@ -68,13 +67,6 @@ export default function App() {
     setError(null)
 
     try {
-      const params = new URLSearchParams({ profile: id }).toString()
-      const matchUrl = `${browser.runtime.getURL(GRAPHIQL_PATH)}?${params}`
-      const tabs = await browser.tabs.query({ url: matchUrl })
-      if (tabs.length > 0) {
-        await browser.tabs.remove(tabs.map((t) => t.id!))
-      }
-
       await profiles.remove(id)
     } catch {
       setError('Failed to delete profile')

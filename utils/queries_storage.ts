@@ -18,6 +18,7 @@ export type SavedQueriesStorage = {
   save(query: SavedQuery): Promise<SavedQuery[]>
   remove(id: string): Promise<SavedQuery[]>
   clear(): Promise<void>
+  watch(callback: (queries: SavedQuery[]) => void): () => void
 }
 
 function createSavedQueriesStorageItem(profileId: string) {
@@ -83,6 +84,16 @@ export function createSavedQueriesStorage(profileId: string): SavedQueriesStorag
 
     async clear() {
       await storageItem.removeValue()
+    },
+
+    watch(callback: (queries: SavedQuery[]) => void): () => void {
+      return storageItem.watch(async (newValue) => {
+        if (newValue == null) {
+          callback([])
+        } else {
+          callback(JSON.parse(await decompress(newValue)) as SavedQuery[])
+        }
+      })
     },
   }
 }
