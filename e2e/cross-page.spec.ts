@@ -194,3 +194,38 @@ test.describe('Profile deletion modal', () => {
     }).toPass({ timeout: 5_000 })
   })
 })
+
+test.describe('Saved queries cross-tab sync', () => {
+  test('a query saved in one tab appears in another tab for the same profile', async ({
+    context,
+    extensionId,
+  }) => {
+    // Open two GraphiQL tabs for the same profile
+    const tab1 = await context.newPage()
+    await tab1.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await waitForGraphiQL(tab1)
+
+    const tab2 = await context.newPage()
+    await tab2.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await waitForGraphiQL(tab2)
+
+    // Open Saved Queries panel in both tabs
+    await tab1.getByLabel('Show Saved Queries').click()
+    await tab2.getByLabel('Show Saved Queries').click()
+    await expect(tab1.getByText('No saved queries yet')).toBeVisible()
+    await expect(tab2.getByText('No saved queries yet')).toBeVisible()
+
+    // Save a query in tab1
+    const queryEditor = tab1.locator('.graphiql-query-editor .monaco-editor textarea')
+    await queryEditor.click({ force: true })
+    await tab1.keyboard.press('ControlOrMeta+a')
+    await tab1.keyboard.press('Backspace')
+    await tab1.keyboard.type('{ countries { name } }', { delay: 10 })
+    await tab1.getByPlaceholder('Query name...').fill('Synced Query')
+    await tab1.locator('.saved-queries-plugin').getByRole('button', { name: 'Save' }).click()
+    await expect(tab1.getByText('Synced Query')).toBeVisible()
+
+    // It should appear in tab2 automatically
+    await expect(tab2.getByText('Synced Query')).toBeVisible({ timeout: 5_000 })
+  })
+})

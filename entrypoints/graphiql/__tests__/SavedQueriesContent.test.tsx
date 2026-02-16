@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
-import type { SavedQueriesStorage } from '~/utils/queries_storage'
+import type { SavedQueriesStorage, SavedQuery } from '~/utils/queries_storage'
 
 const mocks = vi.hoisted(() => ({
   handleEditOperations: vi.fn(),
@@ -262,6 +262,46 @@ describe('SavedQueriesContent', () => {
       const buttons = screen.getAllByRole('button', { name: /Query/ })
       expect(buttons[0]).toHaveTextContent('Bravo Query')
       expect(buttons[1]).toHaveTextContent('Alpha Query')
+    })
+  })
+
+  describe('cross-tab sync', () => {
+    it('registers a storage watcher on mount', async () => {
+      const { storage } = await renderContent()
+      expect(storage.watch).toHaveBeenCalledWith(expect.any(Function))
+    })
+
+    it('updates the query list when the watcher fires', async () => {
+      const storage = createMockStorage([])
+      let watchCallback: (queries: SavedQuery[]) => void = () => {}
+      storage.watch = vi.fn((cb) => {
+        watchCallback = cb
+        return vi.fn()
+      })
+
+      await renderContent(storage)
+      expect(screen.getByText('No saved queries yet')).toBeInTheDocument()
+
+      watchCallback([{ id: 'ext', name: 'External Query', query: '{ x }', createdAt: 3000 }])
+
+      await waitFor(() => {
+        expect(screen.getByText('External Query')).toBeInTheDocument()
+      })
+      expect(screen.queryByText('No saved queries yet')).not.toBeInTheDocument()
+    })
+
+    it('unregisters the watcher on unmount', async () => {
+      const storage = createMockStorage()
+      const mockUnwatch = vi.fn()
+      storage.watch = vi.fn(() => mockUnwatch)
+
+      const { unmount } = render(<SavedQueriesContent storage={storage} />)
+      await waitFor(() => {
+        expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
+      })
+
+      unmount()
+      expect(mockUnwatch).toHaveBeenCalled()
     })
   })
 

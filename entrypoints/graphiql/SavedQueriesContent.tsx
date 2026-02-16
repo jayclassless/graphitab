@@ -52,6 +52,12 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
     loadQueries()
   }, [loadQueries])
 
+  useEffect(() => {
+    return storage.watch((queries) => {
+      setSavedQueries(queries)
+    })
+  }, [storage])
+
   const handleSave = async () => {
     const name = queryName.trim()
     if (!name || !operationsString) return
