@@ -56,6 +56,7 @@ describe('Popup App', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(window, 'close').mockImplementation(() => {})
     mockGetAll.mockResolvedValue([...mockProfiles])
     mockRemove.mockResolvedValue(undefined)
     mockCreate.mockResolvedValue({ id: 'new', name: 'New', url: 'https://new.com/graphql' })
@@ -97,6 +98,7 @@ describe('Popup App', () => {
           windowId: 42,
         })
       })
+      expect(window.close).toHaveBeenCalled()
     })
 
     it('shows empty message when no profiles exist', async () => {

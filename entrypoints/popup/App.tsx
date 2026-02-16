@@ -150,10 +150,11 @@ export default function App() {
                   onClick={async (e) => {
                     e.preventDefault()
                     const currentWindow = await browser.windows.getCurrent()
-                    browser.tabs.create({
+                    await browser.tabs.create({
                       url: browser.runtime.getURL(`${GRAPHIQL_PATH}?${params}`),
                       windowId: currentWindow.id,
                     })
+                    window.close()
                   }}
                 >
                   {profile.name}
