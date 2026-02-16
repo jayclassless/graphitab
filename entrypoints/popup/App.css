@@ -58,6 +58,12 @@ body {
   outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
 }
 
+.popup-warning {
+  color: hsl(var(--color-warning));
+  font-size: var(--font-size-hint);
+  padding: 0 var(--px-4);
+}
+
 .popup-input-invalid {
   background: hsla(var(--color-error), var(--alpha-background-light));
   color: hsl(var(--color-error)) !important;

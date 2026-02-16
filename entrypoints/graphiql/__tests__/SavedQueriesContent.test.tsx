@@ -143,13 +143,28 @@ describe('SavedQueriesContent', () => {
       })
     })
 
-    it('reloads queries after save', async () => {
-      const { user, storage } = await renderContent()
+    it('updates list via watcher after save', async () => {
+      const storage = createMockStorage([])
+      let watchCallback: (queries: SavedQuery[]) => void = () => {}
+      storage.watch = vi.fn((cb) => {
+        watchCallback = cb
+        return vi.fn()
+      })
+
+      const { user } = await renderContent(storage)
+      expect(screen.getByText('No saved queries yet')).toBeInTheDocument()
+
       await user.type(screen.getByPlaceholderText('Query name...'), 'My Query')
       await user.click(screen.getByText('Save'))
+
+      // Simulate the watcher firing after storage.create completes
+      watchCallback([{ id: 'new', name: 'My Query', query: '{ hero { name } }', createdAt: 1000 }])
+
       await waitFor(() => {
-        expect(storage.getAll).toHaveBeenCalledTimes(2)
+        expect(screen.getByText('My Query')).toBeInTheDocument()
       })
+      // getAll only called once (initial load), not after save
+      expect(storage.getAll).toHaveBeenCalledTimes(1)
     })
 
     it('saves on Enter key in name input', async () => {

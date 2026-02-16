@@ -275,6 +275,38 @@ describe('GraphiQL App', () => {
     expect(mockCreateFetcher).not.toHaveBeenCalled()
   })
 
+  it('skips update when headers have same entries in different order', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    const profileWithHeaders: Profile = {
+      ...mockProfile,
+      headers: { Authorization: 'Bearer token', 'X-Custom': 'value' },
+    }
+    mockGetProfile.mockResolvedValue(profileWithHeaders)
+
+    let watchCallback: (profiles: Profile[]) => void = () => {}
+    mockWatchProfiles.mockImplementation(((cb: (profiles: Profile[]) => void) => {
+      watchCallback = cb
+      return vi.fn()
+    }) as typeof mockWatchProfiles)
+
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    mockCreateFetcher.mockClear()
+    act(() => {
+      watchCallback([
+        {
+          ...mockProfile,
+          headers: { 'X-Custom': 'value', Authorization: 'Bearer token' },
+        },
+      ])
+    })
+
+    expect(mockCreateFetcher).not.toHaveBeenCalled()
+  })
+
   it('shows deleted modal when profile is removed from storage', async () => {
     window.history.pushState({}, '', '?profile=test-id')
     mockGetProfile.mockResolvedValue(mockProfile)

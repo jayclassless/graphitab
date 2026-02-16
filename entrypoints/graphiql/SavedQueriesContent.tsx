@@ -4,7 +4,7 @@ import {
   useHeadersEditorState,
   useOptimisticState,
 } from '@graphiql/react'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import { SavedQuery, SavedQueriesStorage } from '~/utils/queries_storage'
@@ -38,19 +38,13 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
     })
   }, [savedQueries, sortField, sortDirection])
 
-  const loadQueries = useCallback(async () => {
-    try {
-      const queries = await storage.getAll()
-      setSavedQueries(queries)
-    } catch {
-      setError('Failed to load saved queries')
-    }
-    setIsLoading(false)
-  }, [storage])
-
   useEffect(() => {
-    loadQueries()
-  }, [loadQueries])
+    storage
+      .getAll()
+      .then(setSavedQueries)
+      .catch(() => setError('Failed to load saved queries'))
+      .finally(() => setIsLoading(false))
+  }, [storage])
 
   useEffect(() => {
     return storage.watch((queries) => {
@@ -69,7 +63,6 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
     } catch {
       setError('Failed to save query')
     }
-    await loadQueries()
   }
 
   const handleLoad = (saved: SavedQuery) => {
@@ -85,7 +78,6 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
     } catch {
       setError('Failed to delete query')
     }
-    await loadQueries()
   }
 
   if (isLoading) {

@@ -55,7 +55,7 @@ export async function update(
   const profiles = await getAll()
   const index = profiles.findIndex((p) => p.id === id)
   if (index === -1) throw new Error(`Profile not found: ${id}`)
-  profiles[index] = { ...profiles[index], name, url, headers }
+  profiles[index] = { id, name, url, ...(headers && { headers }) }
   await profilesStorageItem.setValue(profiles)
   return profiles[index]
 }
@@ -92,7 +92,7 @@ export async function create(
     id: uuid(),
     name,
     url,
-    headers,
+    ...(headers && { headers }),
   }
   profiles.push(profile)
   await profilesStorageItem.setValue(profiles)

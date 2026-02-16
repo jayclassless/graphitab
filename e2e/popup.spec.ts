@@ -90,7 +90,7 @@ test.describe('Popup', () => {
     await page.getByPlaceholder('Value').fill('Bearer my-token')
 
     await page.getByRole('button', { name: 'Add', exact: true }).click()
-    await expect(page.getByPlaceholder('Name')).not.toBeVisible()
+    await expect(page.getByPlaceholder('Name', { exact: true })).not.toBeVisible()
     await expect(page.getByText('Authed API')).toBeVisible()
   })
 

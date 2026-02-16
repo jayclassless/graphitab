@@ -21,12 +21,19 @@ export type SavedQueriesStorage = {
   watch(callback: (queries: SavedQuery[]) => void): () => void
 }
 
-function createSavedQueriesStorageItem(profileId: string) {
-  return storage.defineItem<string>(`sync:savedQueries:${profileId}`)
+const storageItemCache = new Map<string, ReturnType<typeof storage.defineItem<string>>>()
+
+function getStorageItem(profileId: string) {
+  let item = storageItemCache.get(profileId)
+  if (!item) {
+    item = storage.defineItem<string>(`sync:savedQueries:${profileId}`)
+    storageItemCache.set(profileId, item)
+  }
+  return item
 }
 
 export function createSavedQueriesStorage(profileId: string): SavedQueriesStorage {
-  const storageItem = createSavedQueriesStorageItem(profileId)
+  const storageItem = getStorageItem(profileId)
 
   async function readQueries(): Promise<SavedQuery[]> {
     const raw = await storageItem.getValue()

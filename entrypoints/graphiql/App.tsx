@@ -18,6 +18,18 @@ import '@graphiql/plugin-explorer/style.css'
 
 const APP_TITLE = 'GraphiTab'
 
+function headersEqual(
+  a: Record<string, string> | undefined,
+  b: Record<string, string> | undefined
+): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  const keysA = Object.keys(a)
+  const keysB = Object.keys(b)
+  if (keysA.length !== keysB.length) return false
+  return keysA.every((key) => b[key] === a[key])
+}
+
 export function createSavedQueriesPlugin(profileId: string): GraphiQLPlugin {
   const storage = createSavedQueriesStorage(profileId)
 
@@ -35,6 +47,7 @@ export default function App() {
   )
 
   const [profile, setProfile] = useState<Profile | undefined>(undefined)
+  const profileRef = useRef<Profile | undefined>(undefined)
   const [loading, setLoading] = useState(true)
   const [deleted, setDeleted] = useState<{ profile: Profile; savedQueries: SavedQuery[] } | null>(
     null
@@ -45,6 +58,7 @@ export default function App() {
     if (profileId) {
       getProfile(profileId)
         .then((p) => {
+          profileRef.current = p
           setProfile(p)
           if (p) {
             createSavedQueriesStorage(p.id)
@@ -72,24 +86,19 @@ export default function App() {
     return watchProfiles((newProfiles) => {
       const updated = newProfiles.find((p) => p.id === profileId)
       if (updated) {
-        setProfile((prev) => {
-          if (
-            prev &&
-            prev.name === updated.name &&
-            prev.url === updated.url &&
-            JSON.stringify(prev.headers) === JSON.stringify(updated.headers)
-          ) {
-            return prev
-          }
-          return updated
-        })
-      } else {
-        setProfile((prev) => {
-          if (prev) {
-            setDeleted({ profile: prev, savedQueries: savedQueriesRef.current })
-          }
-          return prev
-        })
+        const prev = profileRef.current
+        if (
+          prev &&
+          prev.name === updated.name &&
+          prev.url === updated.url &&
+          headersEqual(prev.headers, updated.headers)
+        ) {
+          return
+        }
+        profileRef.current = updated
+        setProfile(updated)
+      } else if (profileRef.current) {
+        setDeleted({ profile: profileRef.current, savedQueries: savedQueriesRef.current })
       }
     })
   }, [profileId])

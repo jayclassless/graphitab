@@ -167,6 +167,30 @@ describe('Popup App', () => {
       expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql', undefined)
     })
 
+    it('disables Add button when name duplicates an existing profile', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Alpha API')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      expect(screen.getByText('Add')).toBeDisabled()
+      expect(screen.getByText('A profile with this name already exists')).toBeInTheDocument()
+    })
+
+    it('duplicate name check is case-insensitive', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(screen.getByPlaceholderText('Name'), 'alpha api')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      expect(screen.getByText('Add')).toBeDisabled()
+      expect(screen.getByText('A profile with this name already exists')).toBeInTheDocument()
+    })
+
     it('does not create on Enter when form is invalid', async () => {
       const { user } = await renderApp()
       await user.click(screen.getByText('+ New Profile'))
@@ -259,6 +283,23 @@ describe('Popup App', () => {
       await user.type(screen.getByPlaceholderText('GraphQL endpoint URL'), 'not-a-url')
       expect(screen.getByText('Save')).toBeDisabled()
       expect(screen.getByPlaceholderText('GraphQL endpoint URL')).toHaveClass('popup-input-invalid')
+    })
+
+    it('allows saving with the same name when editing', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      // Name is pre-filled as "Alpha API" — should still be submittable
+      expect(screen.getByText('Save')).toBeEnabled()
+      expect(screen.queryByText('A profile with this name already exists')).not.toBeInTheDocument()
+    })
+
+    it('disables Save when name matches a different profile', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getAllByTitle('Edit')[0])
+      await user.clear(screen.getByPlaceholderText('Name'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Bravo API')
+      expect(screen.getByText('Save')).toBeDisabled()
+      expect(screen.getByText('A profile with this name already exists')).toBeInTheDocument()
     })
 
     it('disables Save when name is empty', async () => {
@@ -390,6 +431,23 @@ describe('Popup App', () => {
       await user.click(screen.getByText('Save'))
       expect(mockUpdate).toHaveBeenCalledWith('a', 'Alpha API', 'https://alpha.com/graphql', {
         'X-Key': 'val',
+      })
+    })
+
+    it('trims header values', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      await user.type(screen.getByPlaceholderText('Name'), 'Test')
+      await user.type(
+        screen.getByPlaceholderText('GraphQL endpoint URL'),
+        'https://example.com/graphql'
+      )
+      await user.click(screen.getByText('+ Add Header'))
+      await user.type(screen.getByPlaceholderText('Header name'), '  Authorization  ')
+      await user.type(screen.getByPlaceholderText('Value'), '  Bearer token  ')
+      await user.click(screen.getByText('Add'))
+      expect(mockCreate).toHaveBeenCalledWith('Test', 'https://example.com/graphql', {
+        Authorization: 'Bearer token',
       })
     })
 

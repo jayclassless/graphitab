@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import * as profiles from '~/utils/profiles'
@@ -24,7 +24,8 @@ export default function App() {
   const [formMode, setFormMode] = useState<FormMode>({ kind: 'closed' })
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
-  const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>([])
+  const [headers, setHeaders] = useState<Array<{ id: number; key: string; value: string }>>([])
+  const headerIdRef = useRef(0)
   const [error, setError] = useState<string | null>(null)
 
   const sortedProfiles = useMemo(
@@ -35,7 +36,14 @@ export default function App() {
   const trimmedName = name.trim()
   const trimmedUrl = url.trim()
   const urlInvalid = !!trimmedUrl && !isValidUrl(trimmedUrl)
-  const canSubmit = !!trimmedName && !urlInvalid && !!trimmedUrl
+  const nameDuplicate =
+    !!trimmedName &&
+    allProfiles.some(
+      (p) =>
+        p.name.toLowerCase() === trimmedName.toLowerCase() &&
+        (formMode.kind !== 'edit' || p.id !== formMode.profileId)
+    )
+  const canSubmit = !!trimmedName && !urlInvalid && !!trimmedUrl && !nameDuplicate
 
   const loadProfiles = async () => {
     try {
@@ -53,7 +61,7 @@ export default function App() {
   const headersToRecord = (): Record<string, string> | undefined => {
     const filtered = headers.filter((h) => h.key.trim() !== '')
     if (filtered.length === 0) return undefined
-    return Object.fromEntries(filtered.map((h) => [h.key.trim(), h.value]))
+    return Object.fromEntries(filtered.map((h) => [h.key.trim(), h.value.trim()]))
   }
 
   const resetForm = () => {
@@ -68,10 +76,10 @@ export default function App() {
 
     try {
       await profiles.remove(id)
+      await loadProfiles()
     } catch {
       setError('Failed to delete profile')
     }
-    loadProfiles()
   }
 
   const handleCreate = async () => {
@@ -81,17 +89,23 @@ export default function App() {
     try {
       await profiles.create(trimmedName, trimmedUrl, headersToRecord())
       resetForm()
+      await loadProfiles()
     } catch {
       setError('Failed to create profile')
     }
-    loadProfiles()
   }
 
   const handleEdit = (profile: profiles.Profile) => {
     setName(profile.name)
     setUrl(profile.url)
     setHeaders(
-      profile.headers ? Object.entries(profile.headers).map(([key, value]) => ({ key, value })) : []
+      profile.headers
+        ? Object.entries(profile.headers).map(([key, value]) => ({
+            id: ++headerIdRef.current,
+            key,
+            value,
+          }))
+        : []
     )
     setFormMode({ kind: 'edit', profileId: profile.id })
   }
@@ -103,10 +117,10 @@ export default function App() {
     try {
       await profiles.update(formMode.profileId, trimmedName, trimmedUrl, headersToRecord())
       resetForm()
+      await loadProfiles()
     } catch {
       setError('Failed to update profile')
     }
-    loadProfiles()
   }
 
   const handleSubmit = () => {
@@ -158,6 +172,9 @@ export default function App() {
               if (e.key === 'Enter') handleSubmit()
             }}
           />
+          {nameDuplicate && (
+            <div className="popup-warning">A profile with this name already exists</div>
+          )}
           <input
             className={`gt-input${urlInvalid ? ' popup-input-invalid' : ''}`}
             type="url"
@@ -170,7 +187,7 @@ export default function App() {
           />
           <div className="popup-headers">
             {headers.map((header, index) => (
-              <div key={index} className="popup-header-row">
+              <div key={header.id} className="popup-header-row">
                 <input
                   className="gt-input popup-header-key"
                   type="text"
@@ -205,7 +222,9 @@ export default function App() {
             ))}
             <button
               className="gt-btn popup-btn-add-header"
-              onClick={() => setHeaders([...headers, { key: '', value: '' }])}
+              onClick={() =>
+                setHeaders([...headers, { id: ++headerIdRef.current, key: '', value: '' }])
+              }
             >
               + Add Header
             </button>
