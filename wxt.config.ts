@@ -12,6 +12,10 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: '@graphitab.classless.net',
+        // @ts-expect-error WXT types don't include this valid Firefox manifest key
+        data_collection_permissions: {
+          required: ['none'],
+        },
       },
     },
   },
@@ -19,11 +23,6 @@ export default defineConfig({
     developmentIndicator: 'overlay',
   },
   zip: {
-    excludeSources: [
-      'coverage/**',
-      'test-results/**',
-      'playwright-report/**',
-      'plans/**',
-    ],
+    excludeSources: ['coverage/**', 'test-results/**', 'playwright-report/**', 'plans/**'],
   },
 })
