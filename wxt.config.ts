@@ -18,4 +18,12 @@ export default defineConfig({
   autoIcons: {
     developmentIndicator: 'overlay',
   },
+  zip: {
+    excludeSources: [
+      'coverage/**',
+      'test-results/**',
+      'playwright-report/**',
+      'plans/**',
+    ],
+  },
 })
