@@ -1,14 +1,11 @@
 # GraphiTab
 
-A browser extension (Chrome & Firefox) that gives you a full [GraphiQL](https://github.com/graphql/graphiql) IDE in a new tab. Click the extension icon to manage your GraphQL endpoint profiles, then open any profile to get an interactive GraphiQL session with the Explorer plugin and saved queries.
+A browser extension (for both [Chrome](https://chromewebstore.google.com/detail/graphitab/cdnbebabankmpeacfgnobmgogoedpmgo) & [Firefox](https://addons.mozilla.org/en-US/firefox/addon/graphitab/)) that gives you a full [GraphiQL](https://github.com/graphql/graphiql) IDE in a new tab. Click the extension icon to manage your GraphQL endpoint profiles, then open any profile to get an interactive GraphiQL session with the Explorer plugin and saved queries. Includes the GraphQL Explorer plugin that can help you generate queries by navigating the schema, as well as a custom plugin that allows you to save queries for reuse in the future.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) v24.13.0
-- [pnpm](https://pnpm.io/) v10.28.2 — after installing Node.js, enable pnpm via [Corepack](https://nodejs.org/api/corepack.html):
-  ```bash
-  corepack enable
-  ```
+- [pnpm](https://pnpm.io/) v10.28.2 — after installing Node.js, enable pnpm via [Corepack](https://nodejs.org/api/corepack.html): `corepack enable`
 
 If you have `asdf` available, you can run `asdf install` to activate the necessary tools.
 
