@@ -15,6 +15,7 @@
 
 .confirm-delete-btn:focus {
   outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+  outline-offset: -2px;
 }
 
 .confirm-delete-wrapper {
