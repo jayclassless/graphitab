@@ -145,6 +145,38 @@ test.describe('Saved Queries', () => {
     })
   })
 
+  test('open a saved query in a new tab', async ({ page }) => {
+    // Type a query in the editor
+    const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')
+    await queryEditor.click({ force: true })
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('{ countries { capital } }', { delay: 10 })
+
+    // Save it
+    await page.getByPlaceholder('Query name...').fill('Tab Test Query')
+    await page.locator('.saved-queries-plugin').getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByText('Tab Test Query')).toBeVisible()
+
+    // Count existing GraphiQL editor tabs
+    const tabsBefore = await page.locator('.graphiql-tab').count()
+
+    // Click the "Open in new tab" button
+    await page
+      .locator('.saved-queries-item')
+      .filter({ hasText: 'Tab Test Query' })
+      .getByTitle('Open in new tab')
+      .click()
+
+    // Verify a new GraphiQL editor tab appeared
+    await expect(page.locator('.graphiql-tab')).toHaveCount(tabsBefore + 1)
+
+    // Verify the query content was loaded into the new tab's editor
+    await expect(page.locator('.graphiql-query-editor')).toContainText('countries', {
+      timeout: 5_000,
+    })
+  })
+
   test('delete a saved query', async ({ page }) => {
     // Save a query first
     const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')

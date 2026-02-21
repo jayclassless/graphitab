@@ -63,6 +63,7 @@ vi.mock('@graphiql/react', () => ({
   useVariablesEditorState: () => '',
   useHeadersEditorState: () => '',
   useOptimisticState: () => ['', vi.fn()],
+  useGraphiQLActions: () => ({ addTab: vi.fn() }),
 }))
 
 import App, { createSavedQueriesPlugin } from '../App'

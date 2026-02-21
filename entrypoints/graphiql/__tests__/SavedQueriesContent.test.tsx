@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   handleEditOperations: vi.fn(),
   handleEditVariables: vi.fn(),
   handleEditHeaders: vi.fn(),
+  addTab: vi.fn(),
   operations: '{ hero { name } }',
   variables: '{"id": 1}',
   headers: '{"Auth": "Bearer"}',
@@ -28,6 +29,7 @@ vi.mock('@graphiql/react', () => {
       if (state === headerState) return [mocks.headers, mocks.handleEditHeaders]
       return ['', vi.fn()]
     },
+    useGraphiQLActions: () => ({ addTab: mocks.addTab }),
   }
 })
 
@@ -207,6 +209,34 @@ describe('SavedQueriesContent', () => {
       expect(mocks.handleEditOperations).toHaveBeenCalledWith('{ a }')
       expect(mocks.handleEditVariables).toHaveBeenCalledWith('')
       expect(mocks.handleEditHeaders).toHaveBeenCalledWith('')
+    })
+  })
+
+  describe('open in new tab', () => {
+    it('calls addTab then sets editor content', async () => {
+      const { user } = await renderContent()
+      await user.click(screen.getAllByTitle('Open in new tab')[0])
+      expect(mocks.addTab).toHaveBeenCalled()
+      // Editor content is set after a setTimeout(0)
+      await waitFor(() => {
+        // Alpha Query is sorted first (no variables/headers)
+        expect(mocks.handleEditOperations).toHaveBeenCalledWith('{ a }')
+        expect(mocks.handleEditVariables).toHaveBeenCalledWith('')
+        expect(mocks.handleEditHeaders).toHaveBeenCalledWith('')
+      })
+    })
+
+    it('opens query with variables and headers in new tab', async () => {
+      const { user } = await renderContent()
+      await user.click(screen.getAllByTitle('Open in new tab')[1])
+      expect(mocks.addTab).toHaveBeenCalled()
+      // Editor content is set after a setTimeout(0)
+      await waitFor(() => {
+        // Bravo Query has variables and headers
+        expect(mocks.handleEditOperations).toHaveBeenCalledWith('{ b }')
+        expect(mocks.handleEditVariables).toHaveBeenCalledWith('{"x":1}')
+        expect(mocks.handleEditHeaders).toHaveBeenCalledWith('{"H":"v"}')
+      })
     })
   })
 

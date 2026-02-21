@@ -3,6 +3,7 @@ import {
   useVariablesEditorState,
   useHeadersEditorState,
   useOptimisticState,
+  useGraphiQLActions,
 } from '@graphiql/react'
 import { useState, useEffect, useMemo } from 'react'
 
@@ -19,6 +20,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
   const [operationsString, handleEditOperations] = useOptimisticState(useOperationsEditorState())
   const [variablesString, handleEditVariables] = useOptimisticState(useVariablesEditorState())
   const [headersString, handleEditHeaders] = useOptimisticState(useHeadersEditorState())
+  const { addTab } = useGraphiQLActions()
 
   const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([])
   const [queryName, setQueryName] = useState('')
@@ -72,6 +74,15 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
     handleEditHeaders(saved.headers || '')
   }
 
+  const handleOpenInNewTab = (saved: SavedQuery) => {
+    addTab()
+    setTimeout(() => {
+      handleEditOperations(saved.query)
+      handleEditVariables(saved.variables || '')
+      handleEditHeaders(saved.headers || '')
+    }, 0)
+  }
+
   const handleDelete = async (id: string) => {
     setError(null)
     try {
@@ -120,6 +131,28 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
                 title={saved.query}
               >
                 {saved.name}
+              </button>
+              <button
+                className="saved-queries-open-tab"
+                onClick={() => handleOpenInNewTab(saved)}
+                title="Open in new tab"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M15 3h6v6" />
+                  <path d="M10 14 21 3" />
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                </svg>
               </button>
               <ConfirmDeleteButton onDelete={() => handleDelete(saved.id)} />
             </div>

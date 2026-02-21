@@ -76,3 +76,23 @@
 .saved-queries-item:last-child {
   border-bottom: none;
 }
+
+.saved-queries-open-tab {
+  all: unset;
+  padding: var(--px-4) var(--px-8);
+  border-radius: var(--border-radius-4);
+  cursor: pointer;
+  color: hsla(var(--color-neutral), var(--alpha-tertiary));
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.saved-queries-open-tab:hover {
+  background: hsla(var(--color-primary), var(--alpha-background-light));
+  color: hsl(var(--color-primary));
+}
+
+.saved-queries-open-tab:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}
