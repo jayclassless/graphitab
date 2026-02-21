@@ -15,10 +15,29 @@ body {
 }
 
 .popup-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: var(--font-size-h4);
   font-weight: var(--font-weight-medium);
   padding: var(--px-4) var(--px-8);
   margin-bottom: var(--px-4);
+}
+
+.popup-title-icon {
+  display: flex;
+  line-height: 0;
+  border-radius: var(--border-radius-4);
+  opacity: 0.7;
+}
+
+.popup-title-icon:hover {
+  opacity: 1;
+}
+
+.popup-title-icon:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+  opacity: 1;
 }
 
 .popup-error {

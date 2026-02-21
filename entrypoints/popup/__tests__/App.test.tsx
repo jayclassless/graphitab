@@ -37,7 +37,10 @@ vi.mock('wxt/browser', () => ({
       create: (options: { url: string; windowId?: number }) => mockTabsCreate(options),
     },
     windows: { getCurrent: () => mockWindowsGetCurrent() },
-    runtime: { getURL: (path: string) => `chrome-extension://test-id${path}` },
+    runtime: {
+      getURL: (path: string) => `chrome-extension://test-id${path}`,
+      getManifest: () => ({ homepage_url: 'https://github.com/jayclassless/graphitab' }),
+    },
   },
 }))
 
@@ -74,12 +77,22 @@ describe('Popup App', () => {
     return { user }
   }
 
+  describe('header', () => {
+    it('renders icon linking to project home page', async () => {
+      await renderApp()
+      const iconLink = screen.getByTitle('GraphiTab Homepage')
+      expect(iconLink).toHaveAttribute('href', 'https://github.com/jayclassless/graphitab')
+      expect(iconLink).toHaveAttribute('target', '_blank')
+      expect(iconLink.querySelector('svg')).toBeInTheDocument()
+    })
+  })
+
   describe('profile list', () => {
     it('renders profiles sorted alphabetically', async () => {
       await renderApp()
-      const links = screen.getAllByRole('link')
-      expect(links[0]).toHaveTextContent('Alpha API')
-      expect(links[1]).toHaveTextContent('Bravo API')
+      const profileLinks = screen.getAllByRole('link').filter((el) => el.classList.contains('gt-list-item'))
+      expect(profileLinks[0]).toHaveTextContent('Alpha API')
+      expect(profileLinks[1]).toHaveTextContent('Bravo API')
     })
 
     it('renders profile links with correct hrefs', async () => {
