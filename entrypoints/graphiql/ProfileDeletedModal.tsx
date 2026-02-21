@@ -1,7 +1,6 @@
 import type { Profile } from '~/utils/profiles'
-import type { SavedQuery } from '~/utils/queries_storage'
-
 import { restore } from '~/utils/profiles'
+import type { SavedQuery } from '~/utils/queries_storage'
 
 import './ProfileDeletedModal.css'
 

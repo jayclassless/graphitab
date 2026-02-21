@@ -1,6 +1,5 @@
-import type { GraphiQLPlugin } from '@graphiql/react'
-
 import { explorerPlugin } from '@graphiql/plugin-explorer'
+import type { GraphiQLPlugin } from '@graphiql/react'
 import { createGraphiQLFetcher } from '@graphiql/toolkit'
 import { GraphiQL } from 'graphiql'
 import { useState, useEffect, useMemo, useRef } from 'react'
@@ -12,6 +11,7 @@ import { createGraphiQLSettingsStorage } from '~/utils/settings_storage'
 import ProfileDeletedModal from './ProfileDeletedModal'
 import SavedQueriesContent from './SavedQueriesContent'
 import SavedQueriesIcon from './SavedQueriesIcon'
+
 import './App.css'
 import 'graphiql/style.css'
 import '@graphiql/plugin-explorer/style.css'

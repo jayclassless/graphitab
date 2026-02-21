@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react'
 
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import { SavedQuery, SavedQueriesStorage } from '~/utils/queries_storage'
+
 import '~/styles/shared.css'
 import './SavedQueriesContent.css'
 

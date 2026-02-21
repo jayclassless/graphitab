@@ -1,5 +1,6 @@
-import { storage } from '#imports'
 import { v4 as uuid } from 'uuid'
+
+import { storage } from '#imports'
 
 import { createSavedQueriesStorage, type SavedQuery } from './queries_storage'
 import { createGraphiQLSettingsStorage } from './settings_storage'

@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser'
 
 import ConfirmDeleteButton from '~/components/ConfirmDeleteButton'
 import * as profiles from '~/utils/profiles'
+
 import '~/styles/shared.css'
 import './App.css'
 import 'graphiql/style.css'
