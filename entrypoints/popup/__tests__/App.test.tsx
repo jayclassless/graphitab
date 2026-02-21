@@ -90,7 +90,9 @@ describe('Popup App', () => {
   describe('profile list', () => {
     it('renders profiles sorted alphabetically', async () => {
       await renderApp()
-      const profileLinks = screen.getAllByRole('link').filter((el) => el.classList.contains('gt-list-item'))
+      const profileLinks = screen
+        .getAllByRole('link')
+        .filter((el) => el.classList.contains('gt-list-item'))
       expect(profileLinks[0]).toHaveTextContent('Alpha API')
       expect(profileLinks[1]).toHaveTextContent('Bravo API')
     })
