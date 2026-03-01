@@ -14,9 +14,12 @@ export type HAREntry = {
   time: number
 }
 
+export type OperationType = 'query' | 'mutation' | 'subscription' | 'unknown'
+
 export type GraphQLRequest = {
   id: string
   operationName: string
+  operationType: OperationType
   status: number
   size: number
   time: number
@@ -49,17 +52,23 @@ export function isGraphQLEntry(entry: HAREntry): boolean {
   return false
 }
 
-export function extractOperationName(entry: HAREntry): string {
+export type OperationInfo = {
+  operationName: string
+  operationType: OperationType
+}
+
+export function extractOperationInfo(entry: HAREntry): OperationInfo {
   const { method, url, postData } = entry.request
 
   if (method === 'POST' && postData?.text) {
     try {
       const body = JSON.parse(postData.text)
-      if (typeof body.operationName === 'string' && body.operationName.trim()) {
-        return body.operationName.trim()
-      }
       if (typeof body.query === 'string') {
-        return nameFromQuery(body.query)
+        const info = parseOperation(body.query)
+        if (typeof body.operationName === 'string' && body.operationName.trim()) {
+          return { operationName: body.operationName.trim(), operationType: info.operationType }
+        }
+        return info
       }
     } catch {
       // fall through
@@ -69,31 +78,37 @@ export function extractOperationName(entry: HAREntry): string {
   if (method === 'GET') {
     try {
       const params = new URL(url).searchParams
-      const opName = params.get('operationName')
-      if (opName?.trim()) return opName.trim()
       const query = params.get('query')
-      if (query) return nameFromQuery(query)
+      if (query) {
+        const info = parseOperation(query)
+        const opName = params.get('operationName')
+        if (opName?.trim()) {
+          return { operationName: opName.trim(), operationType: info.operationType }
+        }
+        return info
+      }
     } catch {
       // fall through
     }
   }
 
-  return 'Anonymous'
+  return { operationName: 'Anonymous', operationType: 'unknown' }
 }
 
-function nameFromQuery(query: string): string {
+function parseOperation(query: string): OperationInfo {
   try {
     const ast = parse(query)
     const op = ast.definitions.find(
       (d): d is OperationDefinitionNode => d.kind === 'OperationDefinition'
     )
-    if (op?.name?.value) return op.name.value
-    if (op?.operation) {
-      const t = op.operation
-      return t.charAt(0).toUpperCase() + t.slice(1)
+    if (op) {
+      const operationType = op.operation
+      const operationName =
+        op.name?.value ?? op.operation.charAt(0).toUpperCase() + op.operation.slice(1)
+      return { operationName, operationType }
     }
   } catch {
     // fall through
   }
-  return 'Anonymous'
+  return { operationName: 'Anonymous', operationType: 'unknown' }
 }

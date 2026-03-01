@@ -29,8 +29,22 @@ export default function App() {
             ) : (
               requests.map((req) => (
                 <tr key={req.id}>
-                  <td title={req.operationName}>{req.operationName}</td>
-                  <td>{req.status}</td>
+                  <td title={req.operationName}>
+                    <span className={`gt-op-badge gt-op-badge--${req.operationType}`}>
+                      {req.operationType === 'mutation'
+                        ? 'M'
+                        : req.operationType === 'subscription'
+                          ? 'S'
+                          : 'Q'}
+                    </span>
+                    {req.operationName}
+                  </td>
+                  <td>
+                    <span
+                      className={`gt-status-dot gt-status-dot--${req.status < 400 ? 'success' : 'error'}`}
+                    />
+                    {req.status}
+                  </td>
                   <td>{filesize(req.size)}</td>
                   <td>{prettyMs(req.time)}</td>
                   <td title={req.url}>{req.url}</td>

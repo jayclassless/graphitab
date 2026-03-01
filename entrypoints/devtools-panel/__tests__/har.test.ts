@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { isGraphQLEntry, extractOperationName } from '../har'
+import { isGraphQLEntry, extractOperationInfo } from '../har'
 import type { HAREntry } from '../har'
 
 function makeEntry(overrides: Partial<HAREntry> = {}): HAREntry {
@@ -143,8 +143,53 @@ describe('isGraphQLEntry', () => {
   })
 })
 
-describe('extractOperationName', () => {
-  it('POST: explicit operationName field → returned trimmed', () => {
+describe('extractOperationInfo', () => {
+  it('POST: named query → name and type from AST', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: 'query GetHero { hero { name } }' }) },
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'GetHero',
+      operationType: 'query',
+    })
+  })
+
+  it('POST: named mutation → name and type from AST', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: 'mutation CreateUser { createUser { id } }' }) },
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'CreateUser',
+      operationType: 'mutation',
+    })
+  })
+
+  it('POST: named subscription → name and type from AST', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: 'subscription OnMessage { message { id } }' }) },
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'OnMessage',
+      operationType: 'subscription',
+    })
+  })
+
+  it('POST: explicit operationName overrides AST name, type still from AST', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -155,10 +200,13 @@ describe('extractOperationName', () => {
         },
       },
     })
-    expect(extractOperationName(entry)).toBe('GetHero')
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'GetHero',
+      operationType: 'query',
+    })
   })
 
-  it('POST: blank operationName falls through to query parsing', () => {
+  it('POST: blank operationName falls through to AST name', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -169,46 +217,13 @@ describe('extractOperationName', () => {
         },
       },
     })
-    expect(extractOperationName(entry)).toBe('MyQuery')
-  })
-
-  it('POST: named query operation → name from AST', () => {
-    const entry = makeEntry({
-      request: {
-        method: 'POST',
-        url: 'https://example.com/graphql',
-        headers: [{ name: 'content-type', value: 'application/json' }],
-        postData: { text: JSON.stringify({ query: 'query GetHero { hero { name } }' }) },
-      },
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'MyQuery',
+      operationType: 'query',
     })
-    expect(extractOperationName(entry)).toBe('GetHero')
   })
 
-  it('POST: named mutation operation → name from AST', () => {
-    const entry = makeEntry({
-      request: {
-        method: 'POST',
-        url: 'https://example.com/graphql',
-        headers: [{ name: 'content-type', value: 'application/json' }],
-        postData: { text: JSON.stringify({ query: 'mutation CreateUser { createUser { id } }' }) },
-      },
-    })
-    expect(extractOperationName(entry)).toBe('CreateUser')
-  })
-
-  it('POST: named subscription operation → name from AST', () => {
-    const entry = makeEntry({
-      request: {
-        method: 'POST',
-        url: 'https://example.com/graphql',
-        headers: [{ name: 'content-type', value: 'application/json' }],
-        postData: { text: JSON.stringify({ query: 'subscription OnMessage { message { id } }' }) },
-      },
-    })
-    expect(extractOperationName(entry)).toBe('OnMessage')
-  })
-
-  it('POST: anonymous operation with keyword → capitalized type', () => {
+  it('POST: anonymous mutation → capitalized type as name, mutation type', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -217,10 +232,13 @@ describe('extractOperationName', () => {
         postData: { text: JSON.stringify({ query: 'mutation { createUser { id } }' }) },
       },
     })
-    expect(extractOperationName(entry)).toBe('Mutation')
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Mutation',
+      operationType: 'mutation',
+    })
   })
 
-  it('POST: shorthand query → "Query"', () => {
+  it('POST: shorthand query → "Query" name, query type', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -229,10 +247,10 @@ describe('extractOperationName', () => {
         postData: { text: JSON.stringify({ query: '{ hero }' }) },
       },
     })
-    expect(extractOperationName(entry)).toBe('Query')
+    expect(extractOperationInfo(entry)).toEqual({ operationName: 'Query', operationType: 'query' })
   })
 
-  it('POST: invalid query string → "Anonymous"', () => {
+  it('POST: invalid query string → Anonymous, unknown', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -241,10 +259,13 @@ describe('extractOperationName', () => {
         postData: { text: JSON.stringify({ query: '!@#invalid' }) },
       },
     })
-    expect(extractOperationName(entry)).toBe('Anonymous')
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Anonymous',
+      operationType: 'unknown',
+    })
   })
 
-  it('POST: no body → "Anonymous"', () => {
+  it('POST: no body → Anonymous, unknown', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -252,10 +273,13 @@ describe('extractOperationName', () => {
         headers: [{ name: 'content-type', value: 'application/json' }],
       },
     })
-    expect(extractOperationName(entry)).toBe('Anonymous')
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Anonymous',
+      operationType: 'unknown',
+    })
   })
 
-  it('POST: invalid JSON → "Anonymous"', () => {
+  it('POST: invalid JSON → Anonymous, unknown', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -264,56 +288,13 @@ describe('extractOperationName', () => {
         postData: { text: 'not-json' },
       },
     })
-    expect(extractOperationName(entry)).toBe('Anonymous')
-  })
-
-  it('GET: operationName param present → returned trimmed', () => {
-    const entry = makeEntry({
-      request: {
-        method: 'GET',
-        url: 'https://example.com/graphql?query=%7B%20hero%20%7D&operationName=GetHero',
-        headers: [],
-      },
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Anonymous',
+      operationType: 'unknown',
     })
-    expect(extractOperationName(entry)).toBe('GetHero')
   })
 
-  it('GET: no operationName, query param with named op → name from AST', () => {
-    const query = encodeURIComponent('query GetHero { hero { name } }')
-    const entry = makeEntry({
-      request: {
-        method: 'GET',
-        url: `https://example.com/graphql?query=${query}`,
-        headers: [],
-      },
-    })
-    expect(extractOperationName(entry)).toBe('GetHero')
-  })
-
-  it('GET: no operationName, shorthand query → "Query"', () => {
-    const query = encodeURIComponent('{ hero }')
-    const entry = makeEntry({
-      request: {
-        method: 'GET',
-        url: `https://example.com/graphql?query=${query}`,
-        headers: [],
-      },
-    })
-    expect(extractOperationName(entry)).toBe('Query')
-  })
-
-  it('GET: malformed URL → "Anonymous"', () => {
-    const entry = makeEntry({
-      request: {
-        method: 'GET',
-        url: 'not a url',
-        headers: [],
-      },
-    })
-    expect(extractOperationName(entry)).toBe('Anonymous')
-  })
-
-  it('POST: body has no query field (non-string query) → "Anonymous"', () => {
+  it('POST: body has no query field → Anonymous, unknown', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -322,21 +303,13 @@ describe('extractOperationName', () => {
         postData: { text: JSON.stringify({ variables: { id: '1' } }) },
       },
     })
-    expect(extractOperationName(entry)).toBe('Anonymous')
-  })
-
-  it('GET: valid URL with no query param → "Anonymous"', () => {
-    const entry = makeEntry({
-      request: {
-        method: 'GET',
-        url: 'https://example.com/graphql?variables=%7B%7D',
-        headers: [],
-      },
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Anonymous',
+      operationType: 'unknown',
     })
-    expect(extractOperationName(entry)).toBe('Anonymous')
   })
 
-  it('fragment-only document (no OperationDefinition) → "Anonymous"', () => {
+  it('POST: fragment-only document → Anonymous, unknown', () => {
     const entry = makeEntry({
       request: {
         method: 'POST',
@@ -345,6 +318,78 @@ describe('extractOperationName', () => {
         postData: { text: JSON.stringify({ query: 'fragment F on Query { hero { name } }' }) },
       },
     })
-    expect(extractOperationName(entry)).toBe('Anonymous')
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Anonymous',
+      operationType: 'unknown',
+    })
+  })
+
+  it('GET: named query param → name and type from AST', () => {
+    const query = encodeURIComponent('query GetHero { hero { name } }')
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}`,
+        headers: [],
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'GetHero',
+      operationType: 'query',
+    })
+  })
+
+  it('GET: operationName param overrides AST name, type still from AST', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: 'https://example.com/graphql?query=%7B%20hero%20%7D&operationName=GetHero',
+        headers: [],
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'GetHero',
+      operationType: 'query',
+    })
+  })
+
+  it('GET: shorthand query with no operationName → "Query", query type', () => {
+    const query = encodeURIComponent('{ hero }')
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}`,
+        headers: [],
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({ operationName: 'Query', operationType: 'query' })
+  })
+
+  it('GET: valid URL with no query param → Anonymous, unknown', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: 'https://example.com/graphql?variables=%7B%7D',
+        headers: [],
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Anonymous',
+      operationType: 'unknown',
+    })
+  })
+
+  it('GET: malformed URL → Anonymous, unknown', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: 'not a url',
+        headers: [],
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Anonymous',
+      operationType: 'unknown',
+    })
   })
 })

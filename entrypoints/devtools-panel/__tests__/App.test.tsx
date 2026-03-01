@@ -17,6 +17,7 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
   return {
     id: '1',
     operationName: 'GetHero',
+    operationType: 'query',
     status: 200,
     size: 512,
     time: 123,
@@ -79,5 +80,53 @@ describe('DevTools Panel App', () => {
     mockUseGraphQLRequests.mockReturnValue([makeRequest({ time: 123 })])
     render(<App />)
     expect(screen.getByText('123ms')).toBeInTheDocument()
+  })
+
+  it('shows Q badge for query operations', () => {
+    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'query' })])
+    render(<App />)
+    const badge = screen.getByText('Q')
+    expect(badge).toHaveClass('gt-op-badge--query')
+  })
+
+  it('shows M badge for mutation operations', () => {
+    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'mutation' })])
+    render(<App />)
+    const badge = screen.getByText('M')
+    expect(badge).toHaveClass('gt-op-badge--mutation')
+  })
+
+  it('shows S badge for subscription operations', () => {
+    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'subscription' })])
+    render(<App />)
+    const badge = screen.getByText('S')
+    expect(badge).toHaveClass('gt-op-badge--subscription')
+  })
+
+  it('shows Q badge for unknown operations', () => {
+    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'unknown' })])
+    render(<App />)
+    const badge = screen.getByText('Q')
+    expect(badge).toHaveClass('gt-op-badge--unknown')
+  })
+
+  it('shows success dot for 2xx status', () => {
+    mockUseGraphQLRequests.mockReturnValue([makeRequest({ status: 200 })])
+    const { container } = render(<App />)
+    expect(container.querySelector('.gt-status-dot--success')).toBeInTheDocument()
+    expect(container.querySelector('.gt-status-dot--error')).not.toBeInTheDocument()
+  })
+
+  it('shows error dot for 4xx status', () => {
+    mockUseGraphQLRequests.mockReturnValue([makeRequest({ status: 400 })])
+    const { container } = render(<App />)
+    expect(container.querySelector('.gt-status-dot--error')).toBeInTheDocument()
+    expect(container.querySelector('.gt-status-dot--success')).not.toBeInTheDocument()
+  })
+
+  it('shows error dot for 5xx status', () => {
+    mockUseGraphQLRequests.mockReturnValue([makeRequest({ status: 500 })])
+    const { container } = render(<App />)
+    expect(container.querySelector('.gt-status-dot--error')).toBeInTheDocument()
   })
 })

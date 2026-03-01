@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { isGraphQLEntry, extractOperationName } from './har'
+import { isGraphQLEntry, extractOperationInfo } from './har'
 import type { HAREntry, GraphQLRequest } from './har'
 
 export function useGraphQLRequests(): GraphQLRequest[] {
@@ -10,11 +10,13 @@ export function useGraphQLRequests(): GraphQLRequest[] {
     let counter = 0
     function handleRequest(entry: HAREntry) {
       if (!isGraphQLEntry(entry)) return
+      const { operationName, operationType } = extractOperationInfo(entry)
       setRequests((prev) => [
         ...prev,
         {
           id: String(++counter),
-          operationName: extractOperationName(entry),
+          operationName,
+          operationType,
           status: entry.response.status,
           size: entry.response.content.size,
           time: entry.time,

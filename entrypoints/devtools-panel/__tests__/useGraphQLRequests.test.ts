@@ -95,6 +95,7 @@ describe('useGraphQLRequests', () => {
     expect(result.current[0]).toMatchObject({
       id: '1',
       operationName: 'GetHero',
+      operationType: 'query',
       status: 200,
       size: 512,
       time: 123,
@@ -123,8 +124,11 @@ describe('useGraphQLRequests', () => {
       )
     })
     expect(result.current).toHaveLength(2)
-    expect(result.current[0].operationName).toBe('GetHero')
-    expect(result.current[1].operationName).toBe('CreateUser')
+    expect(result.current[0]).toMatchObject({ operationName: 'GetHero', operationType: 'query' })
+    expect(result.current[1]).toMatchObject({
+      operationName: 'CreateUser',
+      operationType: 'mutation',
+    })
   })
 
   it('id increments monotonically across multiple entries', () => {
