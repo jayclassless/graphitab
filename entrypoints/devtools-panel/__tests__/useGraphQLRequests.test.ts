@@ -5,30 +5,58 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { HAREntry } from '../har'
 import { useGraphQLRequests } from '../useGraphQLRequests'
 
-type Listener = (entry: HAREntry) => void
+type RequestListener = (entry: HAREntry) => void
+type NavigatedListener = () => void
 
 function makeChromeMock() {
-  let capturedListener: Listener | null = null
-  const addListener = vi.fn((fn: Listener) => {
-    capturedListener = fn
+  let capturedRequestListener: RequestListener | null = null
+  const onRequestFinishedAddListener = vi.fn((fn: RequestListener) => {
+    capturedRequestListener = fn
   })
-  const removeListener = vi.fn((fn: Listener) => {
-    if (capturedListener === fn) capturedListener = null
+  const onRequestFinishedRemoveListener = vi.fn((fn: RequestListener) => {
+    if (capturedRequestListener === fn) capturedRequestListener = null
+  })
+
+  let capturedNavigatedListeners: NavigatedListener[] = []
+  const onNavigatedAddListener = vi.fn((fn: NavigatedListener) => {
+    capturedNavigatedListeners.push(fn)
+  })
+  const onNavigatedRemoveListener = vi.fn((fn: NavigatedListener) => {
+    capturedNavigatedListeners = capturedNavigatedListeners.filter((l) => l !== fn)
   })
 
   const chrome = {
     devtools: {
       network: {
-        onRequestFinished: { addListener, removeListener },
+        onRequestFinished: {
+          addListener: onRequestFinishedAddListener,
+          removeListener: onRequestFinishedRemoveListener,
+        },
+        onNavigated: {
+          addListener: onNavigatedAddListener,
+          removeListener: onNavigatedRemoveListener,
+        },
       },
     },
   }
 
   function fire(entry: HAREntry) {
-    capturedListener?.(entry)
+    capturedRequestListener?.(entry)
   }
 
-  return { chrome, addListener, removeListener, fire }
+  function fireNavigated() {
+    capturedNavigatedListeners.forEach((l) => l())
+  }
+
+  return {
+    chrome,
+    addListener: onRequestFinishedAddListener,
+    removeListener: onRequestFinishedRemoveListener,
+    onNavigatedAddListener,
+    onNavigatedRemoveListener,
+    fire,
+    fireNavigated,
+  }
 }
 
 function makeGraphQLEntry(overrides: Partial<HAREntry['request']> = {}): HAREntry {
@@ -70,29 +98,29 @@ describe('useGraphQLRequests', () => {
   })
 
   it('returns empty array initially', () => {
-    const { result } = renderHook(() => useGraphQLRequests())
-    expect(result.current).toEqual([])
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    expect(result.current.requests).toEqual([])
   })
 
   it('registers listener on mount', () => {
-    renderHook(() => useGraphQLRequests())
+    renderHook(() => useGraphQLRequests(false))
     expect(mock.addListener).toHaveBeenCalledOnce()
   })
 
   it('removes same listener on unmount', () => {
-    const { unmount } = renderHook(() => useGraphQLRequests())
+    const { unmount } = renderHook(() => useGraphQLRequests(false))
     const registeredFn = mock.addListener.mock.calls[0][0]
     unmount()
     expect(mock.removeListener).toHaveBeenCalledWith(registeredFn)
   })
 
   it('adds a GraphQLRequest entry when a matching HAR entry fires', () => {
-    const { result } = renderHook(() => useGraphQLRequests())
+    const { result } = renderHook(() => useGraphQLRequests(false))
     act(() => {
       mock.fire(makeGraphQLEntry())
     })
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0]).toMatchObject({
+    expect(result.current.requests).toHaveLength(1)
+    expect(result.current.requests[0]).toMatchObject({
       id: '1',
       operationName: 'GetHero',
       operationType: 'query',
@@ -104,15 +132,15 @@ describe('useGraphQLRequests', () => {
   })
 
   it('ignores non-GraphQL entries', () => {
-    const { result } = renderHook(() => useGraphQLRequests())
+    const { result } = renderHook(() => useGraphQLRequests(false))
     act(() => {
       mock.fire(makeNonGraphQLEntry())
     })
-    expect(result.current).toHaveLength(0)
+    expect(result.current.requests).toHaveLength(0)
   })
 
   it('multiple entries accumulate in order', () => {
-    const { result } = renderHook(() => useGraphQLRequests())
+    const { result } = renderHook(() => useGraphQLRequests(false))
     act(() => {
       mock.fire(makeGraphQLEntry())
       mock.fire(
@@ -123,21 +151,78 @@ describe('useGraphQLRequests', () => {
         })
       )
     })
-    expect(result.current).toHaveLength(2)
-    expect(result.current[0]).toMatchObject({ operationName: 'GetHero', operationType: 'query' })
-    expect(result.current[1]).toMatchObject({
+    expect(result.current.requests).toHaveLength(2)
+    expect(result.current.requests[0]).toMatchObject({
+      operationName: 'GetHero',
+      operationType: 'query',
+    })
+    expect(result.current.requests[1]).toMatchObject({
       operationName: 'CreateUser',
       operationType: 'mutation',
     })
   })
 
   it('id increments monotonically across multiple entries', () => {
-    const { result } = renderHook(() => useGraphQLRequests())
+    const { result } = renderHook(() => useGraphQLRequests(false))
     act(() => {
       mock.fire(makeGraphQLEntry())
       mock.fire(makeGraphQLEntry())
       mock.fire(makeGraphQLEntry())
     })
-    expect(result.current.map((r) => r.id)).toEqual(['1', '2', '3'])
+    expect(result.current.requests.map((r) => r.id)).toEqual(['1', '2', '3'])
+  })
+
+  it('clear() empties the request list', () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    act(() => {
+      mock.fire(makeGraphQLEntry())
+      mock.fire(makeGraphQLEntry())
+    })
+    expect(result.current.requests).toHaveLength(2)
+    act(() => {
+      result.current.clear()
+    })
+    expect(result.current.requests).toHaveLength(0)
+  })
+
+  it('navigation event clears requests when autoClear is true', () => {
+    const { result } = renderHook(() => useGraphQLRequests(true))
+    act(() => {
+      mock.fire(makeGraphQLEntry())
+    })
+    expect(result.current.requests).toHaveLength(1)
+    act(() => {
+      mock.fireNavigated()
+    })
+    expect(result.current.requests).toHaveLength(0)
+  })
+
+  it('navigation event does NOT clear when autoClear is false', () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    act(() => {
+      mock.fire(makeGraphQLEntry())
+    })
+    expect(result.current.requests).toHaveLength(1)
+    act(() => {
+      mock.fireNavigated()
+    })
+    expect(result.current.requests).toHaveLength(1)
+  })
+
+  it('onNavigated listener is removed on unmount when autoClear is true', () => {
+    const { unmount } = renderHook(() => useGraphQLRequests(true))
+    expect(mock.onNavigatedAddListener).toHaveBeenCalledOnce()
+    const registeredFn = mock.onNavigatedAddListener.mock.calls[0][0]
+    unmount()
+    expect(mock.onNavigatedRemoveListener).toHaveBeenCalledWith(registeredFn)
+  })
+
+  it('toggling autoClear from false to true registers the navigation listener', () => {
+    const { rerender } = renderHook(({ autoClear }) => useGraphQLRequests(autoClear), {
+      initialProps: { autoClear: false },
+    })
+    expect(mock.onNavigatedAddListener).not.toHaveBeenCalled()
+    rerender({ autoClear: true })
+    expect(mock.onNavigatedAddListener).toHaveBeenCalledOnce()
   })
 })

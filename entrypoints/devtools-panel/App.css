@@ -124,3 +124,42 @@ body {
   color: hsla(var(--color-neutral), var(--alpha-tertiary));
   padding: var(--px-16);
 }
+
+.gt-devtools-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--px-6) var(--px-8);
+  border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  gap: var(--px-8);
+  flex-shrink: 0;
+}
+
+.gt-devtools-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--px-8);
+}
+
+.gt-toolbar-label {
+  display: flex;
+  align-items: center;
+  gap: var(--px-6);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gt-type-filter {
+  display: flex;
+  gap: var(--px-4);
+}
+
+.gt-type-filter-btn {
+  opacity: 0.45;
+}
+
+.gt-type-filter-btn--active {
+  opacity: 1;
+}

@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
@@ -26,13 +27,17 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
   }
 }
 
+function mockHook(requests: GraphQLRequest[], clear = vi.fn()) {
+  mockUseGraphQLRequests.mockReturnValue({ requests, clear })
+}
+
 describe('DevTools Panel App', () => {
   afterEach(() => {
     cleanup()
   })
 
   it('renders all 5 column headers', () => {
-    mockUseGraphQLRequests.mockReturnValue([])
+    mockHook([])
     render(<App />)
     expect(screen.getByText('Operation')).toBeInTheDocument()
     expect(screen.getByText('Status')).toBeInTheDocument()
@@ -42,13 +47,13 @@ describe('DevTools Panel App', () => {
   })
 
   it('shows empty state when hook returns []', () => {
-    mockUseGraphQLRequests.mockReturnValue([])
+    mockHook([])
     render(<App />)
     expect(screen.getByText('No GraphQL requests recorded.')).toBeInTheDocument()
   })
 
   it('renders a row per request with operation name, status, and URL', () => {
-    mockUseGraphQLRequests.mockReturnValue([
+    mockHook([
       makeRequest({
         id: '1',
         operationName: 'GetHero',
@@ -71,62 +76,132 @@ describe('DevTools Panel App', () => {
   })
 
   it('filesize formats size correctly: 512 → "512 B"', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ size: 512 })])
+    mockHook([makeRequest({ size: 512 })])
     render(<App />)
     expect(screen.getByText('512 B')).toBeInTheDocument()
   })
 
   it('prettyMs formats time correctly: 123 → "123ms"', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ time: 123 })])
+    mockHook([makeRequest({ time: 123 })])
     render(<App />)
     expect(screen.getByText('123ms')).toBeInTheDocument()
   })
 
   it('shows Q badge for query operations', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'query' })])
+    mockHook([makeRequest({ operationType: 'query' })])
     render(<App />)
     const badge = screen.getByText('Q')
     expect(badge).toHaveClass('gt-op-badge--query')
   })
 
   it('shows M badge for mutation operations', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'mutation' })])
+    mockHook([makeRequest({ operationType: 'mutation' })])
     render(<App />)
     const badge = screen.getByText('M')
     expect(badge).toHaveClass('gt-op-badge--mutation')
   })
 
   it('shows S badge for subscription operations', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'subscription' })])
+    mockHook([makeRequest({ operationType: 'subscription' })])
     render(<App />)
     const badge = screen.getByText('S')
     expect(badge).toHaveClass('gt-op-badge--subscription')
   })
 
   it('shows Q badge for unknown operations', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ operationType: 'unknown' })])
+    mockHook([makeRequest({ operationType: 'unknown' })])
     render(<App />)
     const badge = screen.getByText('Q')
     expect(badge).toHaveClass('gt-op-badge--unknown')
   })
 
   it('shows success dot for 2xx status', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ status: 200 })])
+    mockHook([makeRequest({ status: 200 })])
     const { container } = render(<App />)
     expect(container.querySelector('.gt-status-dot--success')).toBeInTheDocument()
     expect(container.querySelector('.gt-status-dot--error')).not.toBeInTheDocument()
   })
 
   it('shows error dot for 4xx status', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ status: 400 })])
+    mockHook([makeRequest({ status: 400 })])
     const { container } = render(<App />)
     expect(container.querySelector('.gt-status-dot--error')).toBeInTheDocument()
     expect(container.querySelector('.gt-status-dot--success')).not.toBeInTheDocument()
   })
 
   it('shows error dot for 5xx status', () => {
-    mockUseGraphQLRequests.mockReturnValue([makeRequest({ status: 500 })])
+    mockHook([makeRequest({ status: 500 })])
     const { container } = render(<App />)
     expect(container.querySelector('.gt-status-dot--error')).toBeInTheDocument()
+  })
+
+  it('Clear button calls clear() when clicked', async () => {
+    const clear = vi.fn()
+    mockHook([], clear)
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(clear).toHaveBeenCalledOnce()
+  })
+
+  it('renders three filter buttons (Query, Mutation, Subscription) initially active', () => {
+    mockHook([])
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'Query' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Mutation' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Subscription' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(screen.queryByRole('button', { name: 'Unknown' })).not.toBeInTheDocument()
+  })
+
+  it('clicking Query button deactivates it; Query rows hidden, Mutation rows still shown', async () => {
+    mockHook([
+      makeRequest({ id: '1', operationType: 'query', operationName: 'GetHero' }),
+      makeRequest({ id: '2', operationType: 'mutation', operationName: 'CreateUser' }),
+    ])
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: 'Query' }))
+    expect(screen.getByRole('button', { name: 'Query' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByText('GetHero')).not.toBeInTheDocument()
+    expect(screen.getByText('CreateUser')).toBeInTheDocument()
+  })
+
+  it('clicking Mutation button deactivates it; Mutation rows hidden', async () => {
+    mockHook([makeRequest({ id: '1', operationType: 'mutation', operationName: 'CreateUser' })])
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: 'Mutation' }))
+    expect(screen.getByRole('button', { name: 'Mutation' })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
+    expect(screen.queryByText('CreateUser')).not.toBeInTheDocument()
+  })
+
+  it('re-clicking a deactivated filter button reactivates it', async () => {
+    mockHook([makeRequest({ id: '1', operationType: 'query', operationName: 'GetHero' })])
+    render(<App />)
+    const queryBtn = screen.getByRole('button', { name: 'Query' })
+    await userEvent.click(queryBtn)
+    expect(queryBtn).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByText('GetHero')).not.toBeInTheDocument()
+    await userEvent.click(queryBtn)
+    expect(queryBtn).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('GetHero')).toBeInTheDocument()
+  })
+
+  it('auto-clear checkbox is unchecked by default', () => {
+    mockHook([])
+    render(<App />)
+    const checkbox = screen.getByRole('checkbox')
+    expect(checkbox).not.toBeChecked()
+  })
+
+  it('clicking the auto-clear checkbox checks it', async () => {
+    mockHook([])
+    render(<App />)
+    const checkbox = screen.getByRole('checkbox')
+    await userEvent.click(checkbox)
+    expect(checkbox).toBeChecked()
   })
 })

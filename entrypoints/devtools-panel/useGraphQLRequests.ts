@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 import { isGraphQLEntry, extractOperationInfo } from './har'
 import type { HAREntry, GraphQLRequest } from './har'
 
-export function useGraphQLRequests(): GraphQLRequest[] {
+export function useGraphQLRequests(autoClear: boolean): {
+  requests: GraphQLRequest[]
+  clear: () => void
+} {
   const [requests, setRequests] = useState<GraphQLRequest[]>([])
+
+  const clear = useCallback(() => setRequests([]), [])
 
   useEffect(() => {
     let counter = 0
@@ -30,5 +35,14 @@ export function useGraphQLRequests(): GraphQLRequest[] {
     }
   }, [])
 
-  return requests
+  useEffect(() => {
+    if (!autoClear) return
+    function handleNavigated() {
+      setRequests([])
+    }
+    chrome.devtools.network.onNavigated.addListener(handleNavigated)
+    return () => chrome.devtools.network.onNavigated.removeListener(handleNavigated)
+  }, [autoClear])
+
+  return { requests, clear }
 }
