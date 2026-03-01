@@ -13,7 +13,7 @@ GraphiTab is a browser extension (Chrome/Firefox) that provides GraphiQL (a Grap
 - `pnpm build` — production build (Chrome)
 - `pnpm build:firefox` — production build (Firefox)
 - `pnpm test` — type-check then run unit tests
-- `pnpm test -- utils/__tests__/profiles.test.ts` — run a single test file
+- `pnpm vitest run utils/__tests__/profiles.test.ts` — run a single test file (skips type-check)
 - `pnpm test:e2e` — build extension then run Playwright E2E tests
 - `pnpm compile` — TypeScript type checking (`tsc --noEmit`)
 - `pnpm lint` — lint with oxlint

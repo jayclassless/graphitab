@@ -1,0 +1,74 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+#root {
+  height: 100%;
+}
+
+.graphiql-container {
+  height: 100%;
+}
+
+.gt-devtools-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  overflow: auto;
+}
+
+.gt-network-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.gt-network-table th,
+.gt-network-table td {
+  padding: var(--px-6) var(--px-8);
+  text-align: left;
+  border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-network-table th {
+  font-weight: 600;
+  color: hsl(var(--color-neutral));
+  background-color: hsla(var(--color-neutral), var(--alpha-background-light));
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.gt-network-table th:nth-child(1) {
+  width: 20%;
+}
+.gt-network-table th:nth-child(2) {
+  width: 10%;
+}
+.gt-network-table th:nth-child(3) {
+  width: 10%;
+}
+.gt-network-table th:nth-child(4) {
+  width: 10%;
+}
+.gt-network-table th:nth-child(5) {
+  width: 50%;
+}
+
+.gt-network-table tbody tr:hover {
+  background-color: hsla(var(--color-neutral), var(--alpha-background-light));
+  cursor: pointer;
+}
+
+.gt-network-empty td {
+  text-align: center;
+  color: hsla(var(--color-neutral), var(--alpha-tertiary));
+  padding: var(--px-16);
+}
