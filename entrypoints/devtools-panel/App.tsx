@@ -1,8 +1,8 @@
-import { filesize } from 'filesize'
-import prettyMs from 'pretty-ms'
+import { List } from 'react-window'
 
 import 'graphiql/style.css'
 import './App.css'
+import { RequestRow, ROW_HEIGHT, type RowData } from './RequestRow'
 import { useDevtoolsSettings, FILTER_TYPES } from './useDevtoolsSettings'
 import { useGraphQLRequests } from './useGraphQLRequests'
 
@@ -72,48 +72,26 @@ export default function App() {
             ))}
           </div>
         </div>
-        <table className="gt-network-table">
-          <thead>
-            <tr>
-              <th>Operation</th>
-              <th>Status</th>
-              <th>Size</th>
-              <th>Time</th>
-              <th>URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.length === 0 ? (
-              <tr className="gt-network-empty">
-                <td colSpan={5}>No GraphQL requests recorded.</td>
-              </tr>
-            ) : (
-              visible.map((req) => (
-                <tr key={req.id}>
-                  <td title={req.operationName}>
-                    <span className={`gt-op-badge gt-op-badge--${req.operationType}`}>
-                      {req.operationType === 'mutation'
-                        ? 'M'
-                        : req.operationType === 'subscription'
-                          ? 'S'
-                          : 'Q'}
-                    </span>
-                    {req.operationName}
-                  </td>
-                  <td>
-                    <span
-                      className={`gt-status-dot gt-status-dot--${req.status < 400 ? 'success' : 'error'}`}
-                    />
-                    {req.status}
-                  </td>
-                  <td>{filesize(req.size)}</td>
-                  <td>{prettyMs(req.time)}</td>
-                  <td title={req.url}>{req.url}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="gt-network-header">
+          <div>Operation</div>
+          <div>Status</div>
+          <div>Size</div>
+          <div>Time</div>
+          <div>URL</div>
+        </div>
+        <div className="gt-network-body">
+          {visible.length === 0 ? (
+            <div className="gt-network-empty">No GraphQL requests recorded.</div>
+          ) : (
+            <List<RowData>
+              rowComponent={RequestRow}
+              rowCount={visible.length}
+              rowHeight={ROW_HEIGHT}
+              rowProps={{ visible }}
+              style={{ height: '100%' }}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

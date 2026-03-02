@@ -1,12 +1,25 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 // @vitest-environment jsdom
+import { cloneElement, type ReactElement } from 'react'
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 import { fakeBrowser } from 'wxt/testing/fake-browser'
 
 vi.mock('../App.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
+vi.mock('react-window', () => ({
+  List: (props: Record<string, unknown>) => {
+    const { rowComponent, rowCount, rowProps } = props as {
+      rowComponent: (p: object) => ReactElement
+      rowCount: number
+      rowProps: object
+    }
+    return Array.from({ length: rowCount }, (_, i) =>
+      cloneElement(rowComponent({ ariaAttributes: {}, index: i, style: {}, ...rowProps }), { key: i })
+    )
+  },
+}))
 vi.mock('../useGraphQLRequests', () => ({ useGraphQLRequests: vi.fn() }))
 
 import App from '../App'
@@ -78,66 +91,6 @@ describe('DevTools Panel App', () => {
     expect(screen.getAllByText('200')).toHaveLength(1)
     expect(screen.getByText('201')).toBeInTheDocument()
     expect(screen.getAllByText('https://api.example.com/graphql')).toHaveLength(2)
-  })
-
-  it('filesize formats size correctly: 512 → "512 B"', () => {
-    mockHook([makeRequest({ size: 512 })])
-    render(<App />)
-    expect(screen.getByText('512 B')).toBeInTheDocument()
-  })
-
-  it('prettyMs formats time correctly: 123 → "123ms"', () => {
-    mockHook([makeRequest({ time: 123 })])
-    render(<App />)
-    expect(screen.getByText('123ms')).toBeInTheDocument()
-  })
-
-  it('shows Q badge for query operations', () => {
-    mockHook([makeRequest({ operationType: 'query' })])
-    render(<App />)
-    const badge = screen.getByText('Q')
-    expect(badge).toHaveClass('gt-op-badge--query')
-  })
-
-  it('shows M badge for mutation operations', () => {
-    mockHook([makeRequest({ operationType: 'mutation' })])
-    render(<App />)
-    const badge = screen.getByText('M')
-    expect(badge).toHaveClass('gt-op-badge--mutation')
-  })
-
-  it('shows S badge for subscription operations', () => {
-    mockHook([makeRequest({ operationType: 'subscription' })])
-    render(<App />)
-    const badge = screen.getByText('S')
-    expect(badge).toHaveClass('gt-op-badge--subscription')
-  })
-
-  it('shows Q badge for unknown operations', () => {
-    mockHook([makeRequest({ operationType: 'unknown' })])
-    render(<App />)
-    const badge = screen.getByText('Q')
-    expect(badge).toHaveClass('gt-op-badge--unknown')
-  })
-
-  it('shows success dot for 2xx status', () => {
-    mockHook([makeRequest({ status: 200 })])
-    const { container } = render(<App />)
-    expect(container.querySelector('.gt-status-dot--success')).toBeInTheDocument()
-    expect(container.querySelector('.gt-status-dot--error')).not.toBeInTheDocument()
-  })
-
-  it('shows error dot for 4xx status', () => {
-    mockHook([makeRequest({ status: 400 })])
-    const { container } = render(<App />)
-    expect(container.querySelector('.gt-status-dot--error')).toBeInTheDocument()
-    expect(container.querySelector('.gt-status-dot--success')).not.toBeInTheDocument()
-  })
-
-  it('shows error dot for 5xx status', () => {
-    mockHook([makeRequest({ status: 500 })])
-    const { container } = render(<App />)
-    expect(container.querySelector('.gt-status-dot--error')).toBeInTheDocument()
   })
 
   it('Clear button calls clear() when clicked', async () => {
