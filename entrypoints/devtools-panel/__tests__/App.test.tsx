@@ -139,19 +139,16 @@ describe('DevTools Panel App', () => {
     const clear = vi.fn()
     mockHook([], clear)
     render(<App />)
-    await userEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Clear network log' }))
     expect(clear).toHaveBeenCalledOnce()
   })
 
-  it('renders three filter buttons (Query, Mutation, Subscription) initially active', () => {
+  it('renders two filter buttons (Query, Mutation) initially active', () => {
     mockHook([])
     render(<App />)
     expect(screen.getByRole('button', { name: 'Query' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Mutation' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Subscription' })).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    )
+    expect(screen.queryByRole('button', { name: 'Subscription' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Unknown' })).not.toBeInTheDocument()
   })
 
@@ -190,14 +187,14 @@ describe('DevTools Panel App', () => {
     expect(screen.getByText('GetHero')).toBeInTheDocument()
   })
 
-  it('auto-clear checkbox is unchecked by default', () => {
+  it('Preserve log checkbox is unchecked by default', () => {
     mockHook([])
     render(<App />)
     const checkbox = screen.getByRole('checkbox')
     expect(checkbox).not.toBeChecked()
   })
 
-  it('clicking the auto-clear checkbox checks it', async () => {
+  it('clicking the Preserve log checkbox checks it', async () => {
     mockHook([])
     render(<App />)
     const checkbox = screen.getByRole('checkbox')

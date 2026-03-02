@@ -151,6 +151,24 @@ body {
   white-space: nowrap;
 }
 
+.gt-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--px-4);
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-4);
+  color: hsl(var(--color-neutral));
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.gt-clear-btn:hover {
+  opacity: 1;
+  background-color: hsla(var(--color-neutral), var(--alpha-background-medium));
+}
+
 .gt-type-filter {
   display: flex;
   gap: var(--px-4);
