@@ -1,8 +1,9 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
+import { fakeBrowser } from 'wxt/testing/fake-browser'
 
 vi.mock('../App.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
@@ -32,6 +33,10 @@ function mockHook(requests: GraphQLRequest[], clear = vi.fn()) {
 }
 
 describe('DevTools Panel App', () => {
+  beforeEach(() => {
+    fakeBrowser.reset()
+  })
+
   afterEach(() => {
     cleanup()
   })

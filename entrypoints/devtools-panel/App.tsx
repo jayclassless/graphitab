@@ -1,31 +1,14 @@
 import { filesize } from 'filesize'
 import prettyMs from 'pretty-ms'
-import { useState } from 'react'
 
 import 'graphiql/style.css'
 import './App.css'
-import type { OperationType } from './har'
+import { useDevtoolsSettings, FILTER_TYPES } from './useDevtoolsSettings'
 import { useGraphQLRequests } from './useGraphQLRequests'
 
-const FILTER_TYPES: OperationType[] = ['query', 'mutation']
-
 export default function App() {
-  const [preserveLog, setPreserveLog] = useState(false)
-  const [activeTypes, setActiveTypes] = useState<Set<OperationType>>(new Set(FILTER_TYPES))
-
+  const { preserveLog, setPreserveLog, activeTypes, toggleType } = useDevtoolsSettings()
   const { requests, clear } = useGraphQLRequests(!preserveLog)
-
-  function toggleType(type: OperationType) {
-    setActiveTypes((prev) => {
-      const next = new Set(prev)
-      if (next.has(type)) {
-        next.delete(type)
-      } else {
-        next.add(type)
-      }
-      return next
-    })
-  }
 
   const visible = requests.filter(
     (r) =>
