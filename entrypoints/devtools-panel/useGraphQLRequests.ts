@@ -40,6 +40,8 @@ export function useGraphQLRequests(autoClear: boolean): {
           size: entry.response.content.size,
           time: entry.time,
           url: entry.request.url,
+          method: entry.request.method,
+          headers: entry.request.headers,
           query,
           variables,
           response: responseText || undefined,

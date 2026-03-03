@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 
-import { isGraphQLEntry, extractOperationInfo, extractQueryAndVariables } from '../har'
-import type { HAREntry } from '../har'
+import {
+  isGraphQLEntry,
+  extractOperationInfo,
+  extractQueryAndVariables,
+  buildCurlCommand,
+} from '../har'
+import type { HAREntry, GraphQLRequest } from '../har'
 
 function makeEntry(overrides: Partial<HAREntry> = {}): HAREntry {
   return {
@@ -544,5 +549,103 @@ describe('extractQueryAndVariables', () => {
       },
     })
     expect(extractQueryAndVariables(entry)).toEqual({ query: '' })
+  })
+})
+
+describe('buildCurlCommand', () => {
+  function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
+    return {
+      id: '1',
+      operationName: 'GetHero',
+      operationType: 'query',
+      status: 200,
+      size: 512,
+      time: 123,
+      url: 'https://api.example.com/graphql',
+      method: 'POST',
+      headers: [{ name: 'content-type', value: 'application/json' }],
+      query: 'query GetHero { hero { name } }',
+      ...overrides,
+    }
+  }
+
+  it('POST with headers and no variables → correct -X, -H flag and --data-raw without variables key', () => {
+    const cmd = buildCurlCommand(makeRequest())
+    expect(cmd).toBe(
+      "curl -X POST 'https://api.example.com/graphql'" +
+        " -H 'content-type: application/json'" +
+        ' --data-raw \'{"query":"query GetHero { hero { name } }"}\''
+    )
+  })
+
+  it('POST with variables → --data-raw body includes parsed variables object', () => {
+    const cmd = buildCurlCommand(makeRequest({ variables: '{\n  "id": "1"\n}' }))
+    expect(cmd).toContain(
+      '--data-raw \'{"query":"query GetHero { hero { name } }","variables":{"id":"1"}}\''
+    )
+  })
+
+  it('POST with non-JSON variables → variables key omitted from body', () => {
+    const cmd = buildCurlCommand(makeRequest({ variables: 'not json' }))
+    expect(cmd).toContain('--data-raw \'{"query":"query GetHero { hero { name } }"}\'')
+    expect(cmd).not.toContain('variables')
+  })
+
+  it('GET request → no --data-raw, URL used as-is', () => {
+    const cmd = buildCurlCommand(
+      makeRequest({
+        method: 'GET',
+        url: 'https://api.example.com/graphql?query=%7B%20hero%20%7D',
+        headers: [],
+      })
+    )
+    expect(cmd).toBe("curl -X GET 'https://api.example.com/graphql?query=%7B%20hero%20%7D'")
+    expect(cmd).not.toContain('--data-raw')
+  })
+
+  it('skips headers with : prefix (HTTP/2 pseudo-headers)', () => {
+    const cmd = buildCurlCommand(
+      makeRequest({ headers: [{ name: ':authority', value: 'api.example.com' }] })
+    )
+    expect(cmd).not.toContain(':authority')
+  })
+
+  it('skips headers with sec- prefix (browser security headers)', () => {
+    const cmd = buildCurlCommand(
+      makeRequest({ headers: [{ name: 'sec-fetch-site', value: 'same-origin' }] })
+    )
+    expect(cmd).not.toContain('sec-fetch-site')
+  })
+
+  it('skips content-length header', () => {
+    const cmd = buildCurlCommand(
+      makeRequest({ headers: [{ name: 'content-length', value: '42' }] })
+    )
+    expect(cmd).not.toContain('content-length')
+  })
+
+  it('includes authorization and custom headers', () => {
+    const cmd = buildCurlCommand(
+      makeRequest({
+        headers: [
+          { name: 'authorization', value: 'Bearer token123' },
+          { name: 'x-custom', value: 'value' },
+        ],
+      })
+    )
+    expect(cmd).toContain("-H 'authorization: Bearer token123'")
+    expect(cmd).toContain("-H 'x-custom: value'")
+  })
+
+  it('escapes single quotes in header values', () => {
+    const cmd = buildCurlCommand(
+      makeRequest({ headers: [{ name: 'x-header', value: "it's a value" }] })
+    )
+    expect(cmd).toContain("-H 'x-header: it'\\''s a value'")
+  })
+
+  it('escapes single quotes in the URL', () => {
+    const cmd = buildCurlCommand(makeRequest({ url: "https://example.com/it's", headers: [] }))
+    expect(cmd).toContain("curl -X POST 'https://example.com/it'\\''s'")
   })
 })

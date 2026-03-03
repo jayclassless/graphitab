@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 import './ContextMenu.css'
+import { buildCurlCommand } from './har'
 import type { GraphQLRequest } from './har'
 
 type Props = {
@@ -87,6 +88,13 @@ export function ContextMenu({ x, y, request, onClose }: Props) {
           Copy Response
         </button>
       )}
+      <button
+        className="gt-context-menu-item"
+        role="menuitem"
+        onClick={() => copyAndClose(buildCurlCommand(request), onClose)}
+      >
+        Copy as cURL
+      </button>
     </div>
   )
 }

@@ -14,6 +14,8 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
     size: 512,
     time: 123,
     url: 'https://api.example.com/graphql',
+    method: 'POST',
+    headers: [{ name: 'content-type', value: 'application/json' }],
     query: 'query GetHero { hero { name } }',
     ...overrides,
   }

@@ -25,6 +25,8 @@ export type GraphQLRequest = {
   size: number
   time: number
   url: string
+  method: string
+  headers: Array<{ name: string; value: string }>
   query: string
   variables?: string
   response?: string
@@ -162,4 +164,37 @@ function parseOperation(query: string): OperationInfo {
     // fall through
   }
   return { operationName: 'Anonymous', operationType: 'unknown' }
+}
+
+const SKIPPED_HEADERS = new Set(['content-length'])
+const SKIPPED_HEADER_PREFIXES = [':', 'sec-']
+
+function shellEscape(value: string): string {
+  return "'" + value.replace(/'/g, "'\\''") + "'"
+}
+
+export function buildCurlCommand(request: GraphQLRequest): string {
+  const parts = ['curl', `-X ${request.method.toUpperCase()}`, shellEscape(request.url)]
+
+  for (const { name, value } of request.headers) {
+    const lower = name.toLowerCase()
+    if (SKIPPED_HEADERS.has(lower) || SKIPPED_HEADER_PREFIXES.some((p) => lower.startsWith(p))) {
+      continue
+    }
+    parts.push(`-H ${shellEscape(`${name}: ${value}`)}`)
+  }
+
+  if (request.method.toUpperCase() === 'POST') {
+    const body: Record<string, unknown> = { query: request.query }
+    if (request.variables) {
+      try {
+        body.variables = JSON.parse(request.variables)
+      } catch {
+        // variables couldn't be parsed; omit from body
+      }
+    }
+    parts.push(`--data-raw ${shellEscape(JSON.stringify(body))}`)
+  }
+
+  return parts.join(' ')
 }

@@ -17,6 +17,8 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
     size: 512,
     time: 123,
     url: 'https://api.example.com/graphql',
+    method: 'POST',
+    headers: [{ name: 'content-type', value: 'application/json' }],
     query: 'query GetHero { hero { name } }',
     variables: '{\n  "id": "1"\n}',
     response: '{"data":{"hero":{"name":"Luke"}}}',
@@ -132,6 +134,15 @@ describe('ContextMenu', () => {
     const menu = container.querySelector('.gt-context-menu') as HTMLElement
     expect(menu.style.left).toBe('100px')
     expect(menu.style.top).toBe('200px')
+  })
+
+  it('Copy as cURL copies a curl command and calls onClose', async () => {
+    const onClose = vi.fn()
+    renderMenu(makeRequest(), onClose)
+    fireEvent.click(screen.getByText('Copy as cURL'))
+    expect(writeText).toHaveBeenCalledOnce()
+    expect(writeText.mock.calls[0][0]).toMatch(/^curl -X /)
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce())
   })
 
   it('copies non-JSON variables as-is when pretty-printing fails', async () => {
