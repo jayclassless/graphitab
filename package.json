@@ -27,6 +27,7 @@
     "test": "pnpm run compile && vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "pnpm run build && playwright test",
+    "fullcheck": "pnpm run compile && pnpm run lint && pnpm run format && pnpm run test:coverage",
     "postinstall": "wxt prepare"
   },
   "dependencies": {

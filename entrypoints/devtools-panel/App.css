@@ -25,7 +25,7 @@ body {
 .gt-network-header,
 .gt-network-row {
   display: grid;
-  grid-template-columns: 20% 10% 10% 10% 50%;
+  grid-template-columns: var(--gt-col-widths, 200px 100px 100px 100px 1fr);
   align-items: center;
 }
 
@@ -36,10 +36,32 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  border-right: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
   box-sizing: border-box;
   height: 100%;
   display: flex;
   align-items: center;
+  position: relative;
+}
+
+.gt-network-header > div:last-child,
+.gt-network-row > div:last-child {
+  border-right: none;
+}
+
+.gt-col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.gt-col-resize-handle:hover,
+.gt-col-resize-handle:active {
+  background-color: hsla(var(--color-neutral), var(--alpha-background-heavy));
 }
 
 .gt-network-header {

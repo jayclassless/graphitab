@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { fakeBrowser } from 'wxt/testing/fake-browser'
 
-import { useDevtoolsSettings, FILTER_TYPES } from '../useDevtoolsSettings'
+import { useDevtoolsSettings, FILTER_TYPES, DEFAULT_COLUMN_WIDTHS } from '../useDevtoolsSettings'
 
 describe('useDevtoolsSettings', () => {
   beforeEach(() => {
@@ -66,5 +66,31 @@ describe('useDevtoolsSettings', () => {
     expect(result.current.activeTypes.has('query')).toBe(true)
     const stored = await fakeBrowser.storage.local.get('devtools.activeTypes')
     expect(stored['devtools.activeTypes']).toContain('query')
+  })
+
+  it('columnWidths defaults to DEFAULT_COLUMN_WIDTHS when storage is empty', async () => {
+    const { result } = renderHook(() => useDevtoolsSettings())
+    await act(async () => {})
+    expect(result.current.columnWidths).toEqual(DEFAULT_COLUMN_WIDTHS)
+  })
+
+  it('reads persisted columnWidths from storage on init', async () => {
+    const customWidths = [300, 150, 80, 120]
+    await fakeBrowser.storage.local.set({ 'devtools.columnWidths': customWidths })
+    const { result } = renderHook(() => useDevtoolsSettings())
+    await act(async () => {})
+    expect(result.current.columnWidths).toEqual(customWidths)
+  })
+
+  it('setColumnWidths updates state and writes to storage', async () => {
+    const { result } = renderHook(() => useDevtoolsSettings())
+    await act(async () => {})
+    const newWidths = [250, 80, 90, 110]
+    await act(async () => {
+      result.current.setColumnWidths(newWidths)
+    })
+    expect(result.current.columnWidths).toEqual(newWidths)
+    const stored = await fakeBrowser.storage.local.get('devtools.columnWidths')
+    expect(stored['devtools.columnWidths']).toEqual(newWidths)
   })
 })

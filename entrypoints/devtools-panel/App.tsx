@@ -1,3 +1,4 @@
+import { useRef, type CSSProperties } from 'react'
 import { List } from 'react-window'
 
 import 'graphiql/style.css'
@@ -6,8 +7,11 @@ import { RequestRow, ROW_HEIGHT, type RowData } from './RequestRow'
 import { useDevtoolsSettings, FILTER_TYPES } from './useDevtoolsSettings'
 import { useGraphQLRequests } from './useGraphQLRequests'
 
+const MIN_COL_WIDTH = 40
+
 export default function App() {
-  const { preserveLog, setPreserveLog, activeTypes, toggleType } = useDevtoolsSettings()
+  const { preserveLog, setPreserveLog, activeTypes, toggleType, columnWidths, setColumnWidths } =
+    useDevtoolsSettings()
   const { requests, clear } = useGraphQLRequests(!preserveLog)
 
   const visible = requests.filter(
@@ -16,9 +20,37 @@ export default function App() {
       activeTypes.has(r.operationType)
   )
 
+  const dragState = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null)
+
+  function startResize(colIndex: number, e: React.MouseEvent) {
+    e.preventDefault()
+    dragState.current = { colIndex, startX: e.clientX, startWidth: columnWidths[colIndex] }
+
+    function onMouseMove(ev: MouseEvent) {
+      if (!dragState.current) return
+      const { colIndex: idx, startX, startWidth } = dragState.current
+      const newWidth = Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX))
+      setColumnWidths(columnWidths.map((w, i) => (i === idx ? newWidth : w)))
+    }
+
+    function onMouseUp() {
+      dragState.current = null
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }
+
+  const gridTemplateColumns = [...columnWidths.map((w) => `${w}px`), '1fr'].join(' ')
+
   return (
     <div className="graphiql-container">
-      <div className="gt-devtools-panel">
+      <div
+        className="gt-devtools-panel"
+        style={{ '--gt-col-widths': gridTemplateColumns } as CSSProperties}
+      >
         <div className="gt-devtools-toolbar">
           <div className="gt-devtools-toolbar-controls">
             <button
@@ -73,10 +105,38 @@ export default function App() {
           </div>
         </div>
         <div className="gt-network-header">
-          <div>Operation</div>
-          <div>Status</div>
-          <div>Size</div>
-          <div>Time</div>
+          <div>
+            Operation
+            <div
+              className="gt-col-resize-handle"
+              onMouseDown={(e) => startResize(0, e)}
+              aria-hidden="true"
+            />
+          </div>
+          <div>
+            Status
+            <div
+              className="gt-col-resize-handle"
+              onMouseDown={(e) => startResize(1, e)}
+              aria-hidden="true"
+            />
+          </div>
+          <div>
+            Size
+            <div
+              className="gt-col-resize-handle"
+              onMouseDown={(e) => startResize(2, e)}
+              aria-hidden="true"
+            />
+          </div>
+          <div>
+            Time
+            <div
+              className="gt-col-resize-handle"
+              onMouseDown={(e) => startResize(3, e)}
+              aria-hidden="true"
+            />
+          </div>
           <div>URL</div>
         </div>
         <div className="gt-network-body">

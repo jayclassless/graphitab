@@ -2,9 +2,8 @@ import { cleanup, render, screen } from '@testing-library/react'
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
-
-import { RequestRow } from '../RequestRow'
 import type { GraphQLRequest } from '../har'
+import { RequestRow } from '../RequestRow'
 
 function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
   return {
