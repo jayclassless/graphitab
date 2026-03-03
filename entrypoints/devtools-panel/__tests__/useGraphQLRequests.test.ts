@@ -62,7 +62,8 @@ function makeChromeMock() {
 function makeGraphQLEntry(
   requestOverrides: Partial<HAREntry['request']> = {},
   responseBody = '{"data":{"hero":{"name":"Luke"}}}',
-  encoding = ''
+  encoding = '',
+  responseHeaders?: Array<{ name: string; value: string }>
 ): HAREntry {
   return {
     request: {
@@ -72,7 +73,7 @@ function makeGraphQLEntry(
       postData: { text: JSON.stringify({ query: 'query GetHero { hero { name } }' }) },
       ...requestOverrides,
     },
-    response: { status: 200, content: { size: 512 } },
+    response: { status: 200, content: { size: 512 }, headers: responseHeaders },
     time: 123,
     getContent: (cb) => cb(responseBody, encoding),
   }
@@ -262,6 +263,26 @@ describe('useGraphQLRequests', () => {
       mock.fire(makeGraphQLEntry({}, btoa(json), 'base64'))
     })
     expect(result.current.requests[0].response).toBe(json)
+  })
+
+  it('captures response headers when present in the HAR entry', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    const headers = [
+      { name: 'content-type', value: 'application/json' },
+      { name: 'x-request-id', value: 'abc123' },
+    ]
+    await act(async () => {
+      mock.fire(makeGraphQLEntry({}, undefined, '', headers))
+    })
+    expect(result.current.requests[0].responseHeaders).toEqual(headers)
+  })
+
+  it('responseHeaders is undefined when not present in the HAR entry', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      mock.fire(makeGraphQLEntry())
+    })
+    expect(result.current.requests[0].responseHeaders).toBeUndefined()
   })
 
   it('falls back to raw content when base64 decoding fails', async () => {

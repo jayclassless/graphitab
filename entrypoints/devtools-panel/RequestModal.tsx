@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import './RequestModal.css'
 import type { GraphQLRequest } from './har'
+import { HeadersTable } from './HeadersTable'
 
 type Tab = 'headers' | 'request' | 'response'
 
@@ -51,7 +52,14 @@ export function RequestModal({ request, onClose }: Props) {
             </button>
           ))}
         </div>
-        <div className="gt-modal-content" role="tabpanel" />
+        <div className="gt-modal-content" role="tabpanel">
+          {activeTab === 'headers' && (
+            <div className="gt-modal-headers">
+              <HeadersTable title="Request Headers" headers={request.headers} />
+              <HeadersTable title="Response Headers" headers={request.responseHeaders} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -10,6 +10,7 @@ export type HAREntry = {
   response: {
     status: number
     content: { size: number }
+    headers?: Array<{ name: string; value: string }>
   }
   time: number
   getContent(callback: (content: string, encoding: string) => void): void
@@ -30,6 +31,7 @@ export type GraphQLRequest = {
   query: string
   variables?: string
   response?: string
+  responseHeaders?: Array<{ name: string; value: string }>
 }
 
 export function isGraphQLEntry(entry: HAREntry): boolean {

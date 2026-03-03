@@ -20,6 +20,7 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
     method: 'POST',
     headers: [{ name: 'content-type', value: 'application/json' }],
     query: 'query GetHero { hero { name } }',
+    responseHeaders: [{ name: 'x-request-id', value: 'abc123' }],
     ...overrides,
   }
 }
@@ -103,5 +104,22 @@ describe('RequestModal', () => {
     const modal = container.querySelector('.gt-modal') as HTMLElement
     fireEvent.click(modal)
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Headers tab content
+  // ---------------------------------------------------------------------------
+
+  it('Headers tab renders Request Headers and Response Headers sections', () => {
+    renderModal()
+    expect(screen.getByText('Request Headers')).toBeInTheDocument()
+    expect(screen.getByText('Response Headers')).toBeInTheDocument()
+  })
+
+  it('Headers tab content is not visible when a different tab is active', () => {
+    renderModal()
+    fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
+    expect(screen.queryByText('Request Headers')).not.toBeInTheDocument()
+    expect(screen.queryByText('Response Headers')).not.toBeInTheDocument()
   })
 })
