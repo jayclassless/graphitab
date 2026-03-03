@@ -59,17 +59,22 @@ function makeChromeMock() {
   }
 }
 
-function makeGraphQLEntry(overrides: Partial<HAREntry['request']> = {}): HAREntry {
+function makeGraphQLEntry(
+  requestOverrides: Partial<HAREntry['request']> = {},
+  responseBody = '{"data":{"hero":{"name":"Luke"}}}',
+  encoding = ''
+): HAREntry {
   return {
     request: {
       method: 'POST',
       url: 'https://api.example.com/graphql',
       headers: [{ name: 'content-type', value: 'application/json' }],
       postData: { text: JSON.stringify({ query: 'query GetHero { hero { name } }' }) },
-      ...overrides,
+      ...requestOverrides,
     },
     response: { status: 200, content: { size: 512 } },
     time: 123,
+    getContent: (cb) => cb(responseBody, encoding),
   }
 }
 
@@ -82,6 +87,7 @@ function makeNonGraphQLEntry(): HAREntry {
     },
     response: { status: 200, content: { size: 100 } },
     time: 50,
+    getContent: (cb) => cb('', ''),
   }
 }
 
@@ -114,9 +120,9 @@ describe('useGraphQLRequests', () => {
     expect(mock.removeListener).toHaveBeenCalledWith(registeredFn)
   })
 
-  it('adds a GraphQLRequest entry when a matching HAR entry fires', () => {
+  it('adds a GraphQLRequest entry when a matching HAR entry fires', async () => {
     const { result } = renderHook(() => useGraphQLRequests(false))
-    act(() => {
+    await act(async () => {
       mock.fire(makeGraphQLEntry())
     })
     expect(result.current.requests).toHaveLength(1)
@@ -128,20 +134,50 @@ describe('useGraphQLRequests', () => {
       size: 512,
       time: 123,
       url: 'https://api.example.com/graphql',
+      query: 'query GetHero { hero { name } }',
+      response: '{"data":{"hero":{"name":"Luke"}}}',
     })
   })
 
-  it('ignores non-GraphQL entries', () => {
+  it('stores variables when present in the request', async () => {
     const { result } = renderHook(() => useGraphQLRequests(false))
-    act(() => {
+    await act(async () => {
+      mock.fire(
+        makeGraphQLEntry({
+          postData: {
+            text: JSON.stringify({
+              query: 'query GetHero($id: ID!) { hero(id: $id) { name } }',
+              variables: { id: '1' },
+            }),
+          },
+        })
+      )
+    })
+    expect(result.current.requests[0]).toMatchObject({
+      query: 'query GetHero($id: ID!) { hero(id: $id) { name } }',
+      variables: '{\n  "id": "1"\n}',
+    })
+  })
+
+  it('response is undefined when getContent returns empty string', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      mock.fire(makeGraphQLEntry({}, ''))
+    })
+    expect(result.current.requests[0].response).toBeUndefined()
+  })
+
+  it('ignores non-GraphQL entries', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
       mock.fire(makeNonGraphQLEntry())
     })
     expect(result.current.requests).toHaveLength(0)
   })
 
-  it('multiple entries accumulate in order', () => {
+  it('multiple entries accumulate in order', async () => {
     const { result } = renderHook(() => useGraphQLRequests(false))
-    act(() => {
+    await act(async () => {
       mock.fire(makeGraphQLEntry())
       mock.fire(
         makeGraphQLEntry({
@@ -162,9 +198,9 @@ describe('useGraphQLRequests', () => {
     })
   })
 
-  it('id increments monotonically across multiple entries', () => {
+  it('id increments monotonically across multiple entries', async () => {
     const { result } = renderHook(() => useGraphQLRequests(false))
-    act(() => {
+    await act(async () => {
       mock.fire(makeGraphQLEntry())
       mock.fire(makeGraphQLEntry())
       mock.fire(makeGraphQLEntry())
@@ -172,9 +208,9 @@ describe('useGraphQLRequests', () => {
     expect(result.current.requests.map((r) => r.id)).toEqual(['1', '2', '3'])
   })
 
-  it('clear() empties the request list', () => {
+  it('clear() empties the request list', async () => {
     const { result } = renderHook(() => useGraphQLRequests(false))
-    act(() => {
+    await act(async () => {
       mock.fire(makeGraphQLEntry())
       mock.fire(makeGraphQLEntry())
     })
@@ -185,9 +221,9 @@ describe('useGraphQLRequests', () => {
     expect(result.current.requests).toHaveLength(0)
   })
 
-  it('navigation event clears requests when autoClear is true', () => {
+  it('navigation event clears requests when autoClear is true', async () => {
     const { result } = renderHook(() => useGraphQLRequests(true))
-    act(() => {
+    await act(async () => {
       mock.fire(makeGraphQLEntry())
     })
     expect(result.current.requests).toHaveLength(1)
@@ -197,9 +233,9 @@ describe('useGraphQLRequests', () => {
     expect(result.current.requests).toHaveLength(0)
   })
 
-  it('navigation event does NOT clear when autoClear is false', () => {
+  it('navigation event does NOT clear when autoClear is false', async () => {
     const { result } = renderHook(() => useGraphQLRequests(false))
-    act(() => {
+    await act(async () => {
       mock.fire(makeGraphQLEntry())
     })
     expect(result.current.requests).toHaveLength(1)
@@ -215,6 +251,24 @@ describe('useGraphQLRequests', () => {
     const registeredFn = mock.onNavigatedAddListener.mock.calls[0][0]
     unmount()
     expect(mock.onNavigatedRemoveListener).toHaveBeenCalledWith(registeredFn)
+  })
+
+  it('decodes base64-encoded response content', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    const json = '{"data":{"hero":{"name":"Luke"}}}'
+    await act(async () => {
+      mock.fire(makeGraphQLEntry({}, btoa(json), 'base64'))
+    })
+    expect(result.current.requests[0].response).toBe(json)
+  })
+
+  it('falls back to raw content when base64 decoding fails', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    const invalid = '!!!not-valid-base64!!!'
+    await act(async () => {
+      mock.fire(makeGraphQLEntry({}, invalid, 'base64'))
+    })
+    expect(result.current.requests[0].response).toBe(invalid)
   })
 
   it('toggling autoClear from false to true registers the navigation listener', () => {

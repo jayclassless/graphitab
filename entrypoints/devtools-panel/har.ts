@@ -12,6 +12,7 @@ export type HAREntry = {
     content: { size: number }
   }
   time: number
+  getContent(callback: (content: string, encoding: string) => void): void
 }
 
 export type OperationType = 'query' | 'mutation' | 'subscription' | 'unknown'
@@ -24,6 +25,9 @@ export type GraphQLRequest = {
   size: number
   time: number
   url: string
+  query: string
+  variables?: string
+  response?: string
 }
 
 export function isGraphQLEntry(entry: HAREntry): boolean {
@@ -50,6 +54,53 @@ export function isGraphQLEntry(entry: HAREntry): boolean {
   }
 
   return false
+}
+
+export type QueryAndVariables = {
+  query: string
+  variables?: string
+}
+
+export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
+  const { method, url, postData } = entry.request
+
+  if (method === 'POST' && postData?.text) {
+    try {
+      const body = JSON.parse(postData.text)
+      if (typeof body.query === 'string') {
+        const variables =
+          body.variables !== null && typeof body.variables === 'object'
+            ? JSON.stringify(body.variables, null, 2)
+            : undefined
+        return { query: body.query, variables }
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  if (method === 'GET') {
+    try {
+      const params = new URL(url).searchParams
+      const query = params.get('query')
+      if (query) {
+        const variablesParam = params.get('variables')
+        let variables: string | undefined
+        if (variablesParam) {
+          try {
+            variables = JSON.stringify(JSON.parse(variablesParam), null, 2)
+          } catch {
+            // not valid JSON, skip
+          }
+        }
+        return { query, variables }
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  return { query: '' }
 }
 
 export type OperationInfo = {

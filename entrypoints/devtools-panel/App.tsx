@@ -1,8 +1,10 @@
-import { useRef, type CSSProperties } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { List } from 'react-window'
 
 import 'graphiql/style.css'
 import './App.css'
+import { ContextMenu } from './ContextMenu'
+import type { GraphQLRequest } from './har'
 import { RequestRow, ROW_HEIGHT, type RowData } from './RequestRow'
 import { useDevtoolsSettings, FILTER_TYPES } from './useDevtoolsSettings'
 import { useGraphQLRequests } from './useGraphQLRequests'
@@ -19,6 +21,12 @@ export default function App() {
       !FILTER_TYPES.includes(r.operationType as (typeof FILTER_TYPES)[number]) ||
       activeTypes.has(r.operationType)
   )
+
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    request: GraphQLRequest
+  } | null>(null)
 
   const dragState = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null)
 
@@ -147,12 +155,23 @@ export default function App() {
               rowComponent={RequestRow}
               rowCount={visible.length}
               rowHeight={ROW_HEIGHT}
-              rowProps={{ visible }}
+              rowProps={{
+                visible,
+                onContextMenu: (req, x, y) => setContextMenu({ x, y, request: req }),
+              }}
               style={{ height: '100%' }}
             />
           )}
         </div>
       </div>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          request={contextMenu.request}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   )
 }

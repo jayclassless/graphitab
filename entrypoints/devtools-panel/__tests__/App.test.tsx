@@ -7,6 +7,7 @@ import '@testing-library/jest-dom/vitest'
 import { fakeBrowser } from 'wxt/testing/fake-browser'
 
 vi.mock('../App.css', () => ({}))
+vi.mock('../ContextMenu.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
 vi.mock('react-window', () => ({
   List: (props: Record<string, unknown>) => {
@@ -39,6 +40,7 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
     size: 512,
     time: 123,
     url: 'https://api.example.com/graphql',
+    query: 'query GetHero { hero { name } }',
     ...overrides,
   }
 }
@@ -346,5 +348,29 @@ describe('DevTools Panel App', () => {
     fireEvent.mouseDown(handles[0], { clientX: 200 })
     fireEvent.mouseMove(document, { clientX: 230 })
     expect(panel.style.getPropertyValue('--gt-col-widths')).toBe('280px 100px 100px 100px 1fr')
+  })
+
+  // ---------------------------------------------------------------------------
+  // Context menu
+  // ---------------------------------------------------------------------------
+
+  it('right-clicking a row opens the context menu', () => {
+    mockHook([makeRequest()])
+    render(<App />)
+    const row = document.querySelector('.gt-network-row') as HTMLElement
+    fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    expect(screen.getByText('Copy URL')).toBeInTheDocument()
+    expect(screen.getByText('Copy Query')).toBeInTheDocument()
+  })
+
+  it('context menu closes when clicking outside it', () => {
+    mockHook([makeRequest()])
+    render(<App />)
+    const row = document.querySelector('.gt-network-row') as HTMLElement
+    fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    fireEvent.mouseDown(document.body, { button: 0 })
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 })

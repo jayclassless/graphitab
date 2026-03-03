@@ -6,12 +6,29 @@ import type { GraphQLRequest } from './har'
 
 export const ROW_HEIGHT = 32
 
-export type RowData = { visible: GraphQLRequest[] }
+export type RowData = {
+  visible: GraphQLRequest[]
+  onContextMenu: (req: GraphQLRequest, x: number, y: number) => void
+}
 
-export function RequestRow({ index, style, ariaAttributes, visible }: RowComponentProps<RowData>) {
+export function RequestRow({
+  index,
+  style,
+  ariaAttributes,
+  visible,
+  onContextMenu,
+}: RowComponentProps<RowData>) {
   const req = visible[index]
   return (
-    <div style={style} className="gt-network-row" {...ariaAttributes}>
+    <div
+      style={style}
+      className="gt-network-row"
+      {...ariaAttributes}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        onContextMenu(req, e.clientX, e.clientY)
+      }}
+    >
       <div title={req.operationName}>
         <span className={`gt-op-badge gt-op-badge--${req.operationType}`}>
           {req.operationType === 'mutation'

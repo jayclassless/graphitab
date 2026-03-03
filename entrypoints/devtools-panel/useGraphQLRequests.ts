@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-import { isGraphQLEntry, extractOperationInfo } from './har'
+import { isGraphQLEntry, extractOperationInfo, extractQueryAndVariables } from './har'
 import type { HAREntry, GraphQLRequest } from './har'
 
 export function useGraphQLRequests(autoClear: boolean): {
@@ -13,9 +13,23 @@ export function useGraphQLRequests(autoClear: boolean): {
 
   useEffect(() => {
     let counter = 0
-    function handleRequest(entry: HAREntry) {
+    async function handleRequest(entry: HAREntry) {
       if (!isGraphQLEntry(entry)) return
       const { operationName, operationType } = extractOperationInfo(entry)
+      const { query, variables } = extractQueryAndVariables(entry)
+      const responseText = await new Promise<string>((resolve) => {
+        entry.getContent((content, encoding) => {
+          if (encoding === 'base64') {
+            try {
+              resolve(atob(content))
+            } catch {
+              resolve(content)
+            }
+          } else {
+            resolve(content)
+          }
+        })
+      })
       setRequests((prev) => [
         ...prev,
         {
@@ -26,6 +40,9 @@ export function useGraphQLRequests(autoClear: boolean): {
           size: entry.response.content.size,
           time: entry.time,
           url: entry.request.url,
+          query,
+          variables,
+          response: responseText || undefined,
         },
       ])
     }

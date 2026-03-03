@@ -1,6 +1,6 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, fireEvent } from '@testing-library/react'
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 import type { GraphQLRequest } from '../har'
 import { RequestRow } from '../RequestRow'
@@ -14,14 +14,23 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
     size: 512,
     time: 123,
     url: 'https://api.example.com/graphql',
+    query: 'query GetHero { hero { name } }',
     ...overrides,
   }
 }
 
 const ariaAttributes = { 'aria-posinset': 1, 'aria-setsize': 1, role: 'listitem' as const }
 
-function renderRow(req: GraphQLRequest) {
-  return render(<RequestRow ariaAttributes={ariaAttributes} index={0} style={{}} visible={[req]} />)
+function renderRow(req: GraphQLRequest, onContextMenu = vi.fn()) {
+  return render(
+    <RequestRow
+      ariaAttributes={ariaAttributes}
+      index={0}
+      style={{}}
+      visible={[req]}
+      onContextMenu={onContextMenu}
+    />
+  )
 }
 
 describe('RequestRow', () => {
@@ -74,5 +83,15 @@ describe('RequestRow', () => {
   it('shows error dot for 5xx status', () => {
     const { container } = renderRow(makeRequest({ status: 500 }))
     expect(container.querySelector('.gt-status-dot--error')).toBeInTheDocument()
+  })
+
+  it('right-click calls onContextMenu with the request and mouse coordinates', () => {
+    const onContextMenu = vi.fn()
+    const req = makeRequest()
+    const { container } = renderRow(req, onContextMenu)
+    const row = container.firstChild as HTMLElement
+    fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+    expect(onContextMenu).toHaveBeenCalledOnce()
+    expect(onContextMenu).toHaveBeenCalledWith(req, 100, 200)
   })
 })

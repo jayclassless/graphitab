@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { isGraphQLEntry, extractOperationInfo } from '../har'
+import { isGraphQLEntry, extractOperationInfo, extractQueryAndVariables } from '../har'
 import type { HAREntry } from '../har'
 
 function makeEntry(overrides: Partial<HAREntry> = {}): HAREntry {
@@ -18,6 +18,7 @@ function makeEntry(overrides: Partial<HAREntry> = {}): HAREntry {
       ...overrides.response,
     },
     time: 123,
+    getContent: () => {},
     ...overrides,
   }
 }
@@ -391,5 +392,157 @@ describe('extractOperationInfo', () => {
       operationName: 'Anonymous',
       operationType: 'unknown',
     })
+  })
+})
+
+describe('extractQueryAndVariables', () => {
+  it('POST with query only → query returned, no variables', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: 'query GetHero { hero { name } }' }) },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: 'query GetHero { hero { name } }',
+      variables: undefined,
+    })
+  })
+
+  it('POST with query and object variables → both returned, variables pretty-printed', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify({
+            query: 'query GetHero($id: ID!) { hero(id: $id) { name } }',
+            variables: { id: '1' },
+          }),
+        },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: 'query GetHero($id: ID!) { hero(id: $id) { name } }',
+      variables: '{\n  "id": "1"\n}',
+    })
+  })
+
+  it('POST with null variables → no variables', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: '{ hero }', variables: null }) },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({ query: '{ hero }', variables: undefined })
+  })
+
+  it('POST with non-object variables (string) → no variables', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: '{ hero }', variables: 'not-an-object' }) },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({ query: '{ hero }', variables: undefined })
+  })
+
+  it('POST with invalid JSON body → empty query', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: 'not-json' },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({ query: '' })
+  })
+
+  it('POST with no body → empty query', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({ query: '' })
+  })
+
+  it('GET with query param only → query returned, no variables', () => {
+    const query = encodeURIComponent('query GetHero { hero { name } }')
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}`,
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: 'query GetHero { hero { name } }',
+      variables: undefined,
+    })
+  })
+
+  it('GET with query and variables params → both returned', () => {
+    const query = encodeURIComponent('query GetHero($id: ID!) { hero(id: $id) { name } }')
+    const variables = encodeURIComponent(JSON.stringify({ id: '1' }))
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}&variables=${variables}`,
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: 'query GetHero($id: ID!) { hero(id: $id) { name } }',
+      variables: '{\n  "id": "1"\n}',
+    })
+  })
+
+  it('GET with invalid variables param → query returned, no variables', () => {
+    const query = encodeURIComponent('{ hero }')
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}&variables=not-json`,
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+    })
+  })
+
+  it('GET with no query param → empty query', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: 'https://example.com/graphql?foo=bar',
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({ query: '' })
+  })
+
+  it('unrecognized method → empty query', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'PUT',
+        url: 'https://example.com/graphql',
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({ query: '' })
   })
 })
