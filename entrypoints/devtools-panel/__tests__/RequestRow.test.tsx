@@ -23,7 +23,7 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
 
 const ariaAttributes = { 'aria-posinset': 1, 'aria-setsize': 1, role: 'listitem' as const }
 
-function renderRow(req: GraphQLRequest, onContextMenu = vi.fn()) {
+function renderRow(req: GraphQLRequest, onContextMenu = vi.fn(), onClick = vi.fn()) {
   return render(
     <RequestRow
       ariaAttributes={ariaAttributes}
@@ -31,6 +31,7 @@ function renderRow(req: GraphQLRequest, onContextMenu = vi.fn()) {
       style={{}}
       visible={[req]}
       onContextMenu={onContextMenu}
+      onClick={onClick}
     />
   )
 }
@@ -95,5 +96,15 @@ describe('RequestRow', () => {
     fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
     expect(onContextMenu).toHaveBeenCalledOnce()
     expect(onContextMenu).toHaveBeenCalledWith(req, 100, 200)
+  })
+
+  it('left-click calls onClick with the request', () => {
+    const onClick = vi.fn()
+    const req = makeRequest()
+    const { container } = renderRow(req, vi.fn(), onClick)
+    const row = container.firstChild as HTMLElement
+    fireEvent.click(row)
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(onClick).toHaveBeenCalledWith(req)
   })
 })

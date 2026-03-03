@@ -8,6 +8,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser'
 
 vi.mock('../App.css', () => ({}))
 vi.mock('../ContextMenu.css', () => ({}))
+vi.mock('../RequestModal.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
 vi.mock('react-window', () => ({
   List: (props: Record<string, unknown>) => {
@@ -374,5 +375,35 @@ describe('DevTools Panel App', () => {
     expect(screen.getByRole('menu')).toBeInTheDocument()
     fireEvent.mouseDown(document.body, { button: 0 })
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Request modal
+  // ---------------------------------------------------------------------------
+
+  it('left-clicking a row opens the request modal', () => {
+    mockHook([makeRequest()])
+    render(<App />)
+    const row = document.querySelector('.gt-network-row') as HTMLElement
+    fireEvent.click(row)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('modal shows the operation name of the clicked row', () => {
+    mockHook([makeRequest({ operationName: 'GetHero' })])
+    render(<App />)
+    const row = document.querySelector('.gt-network-row') as HTMLElement
+    fireEvent.click(row)
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'GetHero')
+  })
+
+  it('pressing Escape closes the modal', () => {
+    mockHook([makeRequest()])
+    render(<App />)
+    const row = document.querySelector('.gt-network-row') as HTMLElement
+    fireEvent.click(row)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

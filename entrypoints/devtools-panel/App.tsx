@@ -5,6 +5,7 @@ import 'graphiql/style.css'
 import './App.css'
 import { ContextMenu } from './ContextMenu'
 import type { GraphQLRequest } from './har'
+import { RequestModal } from './RequestModal'
 import { RequestRow, ROW_HEIGHT, type RowData } from './RequestRow'
 import { useDevtoolsSettings, FILTER_TYPES } from './useDevtoolsSettings'
 import { useGraphQLRequests } from './useGraphQLRequests'
@@ -27,6 +28,7 @@ export default function App() {
     y: number
     request: GraphQLRequest
   } | null>(null)
+  const [selectedRequest, setSelectedRequest] = useState<GraphQLRequest | null>(null)
 
   const dragState = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null)
 
@@ -158,6 +160,7 @@ export default function App() {
               rowProps={{
                 visible,
                 onContextMenu: (req, x, y) => setContextMenu({ x, y, request: req }),
+                onClick: (req) => setSelectedRequest(req),
               }}
               style={{ height: '100%' }}
             />
@@ -171,6 +174,9 @@ export default function App() {
           request={contextMenu.request}
           onClose={() => setContextMenu(null)}
         />
+      )}
+      {selectedRequest && (
+        <RequestModal request={selectedRequest} onClose={() => setSelectedRequest(null)} />
       )}
     </div>
   )

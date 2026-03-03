@@ -9,6 +9,7 @@ export const ROW_HEIGHT = 32
 export type RowData = {
   visible: GraphQLRequest[]
   onContextMenu: (req: GraphQLRequest, x: number, y: number) => void
+  onClick: (req: GraphQLRequest) => void
 }
 
 export function RequestRow({
@@ -17,6 +18,7 @@ export function RequestRow({
   ariaAttributes,
   visible,
   onContextMenu,
+  onClick,
 }: RowComponentProps<RowData>) {
   const req = visible[index]
   return (
@@ -24,6 +26,7 @@ export function RequestRow({
       style={style}
       className="gt-network-row"
       {...ariaAttributes}
+      onClick={() => onClick(req)}
       onContextMenu={(e) => {
         e.preventDefault()
         onContextMenu(req, e.clientX, e.clientY)
