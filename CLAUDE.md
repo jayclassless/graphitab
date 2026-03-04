@@ -91,3 +91,4 @@ Shared reusable components are in `styles/shared.css` with a `.gt-*` class prefi
 
 - No code change is considered complete unless tests have been added or updated to address the changes, the full test suite passes, the linter reports no errors, and the code is properly formatted.
 - Styling for UI components should mimic that of GraphiQL's UI design whenever possible, using the CSS variables and shared classes described above.
+- All React components should be in their own module.
