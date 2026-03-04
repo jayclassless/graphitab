@@ -706,6 +706,27 @@ describe('buildCurlCommand', () => {
     expect(cmd).not.toContain('variables')
   })
 
+  it('POST with extensions → --data-raw body includes parsed extensions object', () => {
+    const cmd = buildCurlCommand(makeRequest({ extensions: '{"persistedQuery":{"version":1}}' }))
+    expect(cmd).toContain(
+      '--data-raw \'{"query":"query GetHero { hero { name } }","extensions":{"persistedQuery":{"version":1}}}\''
+    )
+  })
+
+  it('POST with non-JSON extensions → extensions key omitted from body', () => {
+    const cmd = buildCurlCommand(makeRequest({ extensions: 'not json' }))
+    expect(cmd).toContain('--data-raw \'{"query":"query GetHero { hero { name } }"}\'')
+    expect(cmd).not.toContain('extensions')
+  })
+
+  it('POST with variables and extensions → body includes both', () => {
+    const cmd = buildCurlCommand(
+      makeRequest({ variables: '{"id":"1"}', extensions: '{"persistedQuery":{"version":1}}' })
+    )
+    expect(cmd).toContain('"variables":{"id":"1"}')
+    expect(cmd).toContain('"extensions":{"persistedQuery":{"version":1}}')
+  })
+
   it('GET request → no --data-raw, URL used as-is', () => {
     const cmd = buildCurlCommand(
       makeRequest({

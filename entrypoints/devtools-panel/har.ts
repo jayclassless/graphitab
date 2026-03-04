@@ -210,6 +210,13 @@ export function buildCurlCommand(request: GraphQLRequest): string {
         // variables couldn't be parsed; omit from body
       }
     }
+    if (request.extensions) {
+      try {
+        body.extensions = JSON.parse(request.extensions)
+      } catch {
+        // extensions couldn't be parsed; omit from body
+      }
+    }
     parts.push(`--data-raw ${shellEscape(JSON.stringify(body))}`)
   }
 
