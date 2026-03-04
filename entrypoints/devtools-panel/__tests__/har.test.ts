@@ -550,6 +550,121 @@ describe('extractQueryAndVariables', () => {
     })
     expect(extractQueryAndVariables(entry)).toEqual({ query: '' })
   })
+
+  it('POST with extensions object → extensions pretty-printed', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify({ query: '{ hero }', extensions: { tracing: true } }),
+        },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+      extensions: '{\n  "tracing": true\n}',
+    })
+  })
+
+  it('POST with null extensions → no extensions', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: '{ hero }', extensions: null }) },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+      extensions: undefined,
+    })
+  })
+
+  it('POST with non-object extensions (string) → no extensions', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: '{ hero }', extensions: 'not-an-object' }) },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+      extensions: undefined,
+    })
+  })
+
+  it('POST with no extensions field → no extensions', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: '{ hero }' }) },
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+      extensions: undefined,
+    })
+  })
+
+  it('GET with valid extensions param → extensions pretty-printed', () => {
+    const query = encodeURIComponent('{ hero }')
+    const extensions = encodeURIComponent(JSON.stringify({ tracing: true }))
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}&extensions=${extensions}`,
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+      extensions: '{\n  "tracing": true\n}',
+    })
+  })
+
+  it('GET with invalid extensions param → no extensions', () => {
+    const query = encodeURIComponent('{ hero }')
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}&extensions=not-json`,
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+      extensions: undefined,
+    })
+  })
+
+  it('GET with no extensions param → no extensions', () => {
+    const query = encodeURIComponent('{ hero }')
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?query=${query}`,
+        headers: [],
+      },
+    })
+    expect(extractQueryAndVariables(entry)).toEqual({
+      query: '{ hero }',
+      variables: undefined,
+      extensions: undefined,
+    })
+  })
 })
 
 describe('buildCurlCommand', () => {

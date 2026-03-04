@@ -16,7 +16,7 @@ export function useGraphQLRequests(autoClear: boolean): {
     async function handleRequest(entry: HAREntry) {
       if (!isGraphQLEntry(entry)) return
       const { operationName, operationType } = extractOperationInfo(entry)
-      const { query, variables } = extractQueryAndVariables(entry)
+      const { query, variables, extensions } = extractQueryAndVariables(entry)
       const responseText = await new Promise<string>((resolve) => {
         entry.getContent((content, encoding) => {
           if (encoding === 'base64') {
@@ -44,6 +44,7 @@ export function useGraphQLRequests(autoClear: boolean): {
           headers: entry.request.headers,
           query,
           variables,
+          extensions,
           response: responseText || undefined,
           responseHeaders: entry.response.headers,
         },

@@ -30,6 +30,7 @@ export type GraphQLRequest = {
   headers: Array<{ name: string; value: string }>
   query: string
   variables?: string
+  extensions?: string
   response?: string
   responseHeaders?: Array<{ name: string; value: string }>
 }
@@ -63,6 +64,7 @@ export function isGraphQLEntry(entry: HAREntry): boolean {
 export type QueryAndVariables = {
   query: string
   variables?: string
+  extensions?: string
 }
 
 export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
@@ -76,7 +78,11 @@ export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
           body.variables !== null && typeof body.variables === 'object'
             ? JSON.stringify(body.variables, null, 2)
             : undefined
-        return { query: body.query, variables }
+        const extensions =
+          body.extensions !== null && typeof body.extensions === 'object'
+            ? JSON.stringify(body.extensions, null, 2)
+            : undefined
+        return { query: body.query, variables, extensions }
       }
     } catch {
       // fall through
@@ -97,7 +103,16 @@ export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
             // not valid JSON, skip
           }
         }
-        return { query, variables }
+        const extensionsParam = params.get('extensions')
+        let extensions: string | undefined
+        if (extensionsParam) {
+          try {
+            extensions = JSON.stringify(JSON.parse(extensionsParam), null, 2)
+          } catch {
+            // not valid JSON, skip
+          }
+        }
+        return { query, variables, extensions }
       }
     } catch {
       // fall through

@@ -4,6 +4,9 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
 vi.mock('../RequestModal.css', () => ({}))
+vi.mock('../RequestTab', () => ({
+  RequestTab: () => <div data-testid="request-tab-mock" />,
+}))
 
 import type { GraphQLRequest } from '../har'
 import { RequestModal } from '../RequestModal'
@@ -121,5 +124,20 @@ describe('RequestModal', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
     expect(screen.queryByText('Request Headers')).not.toBeInTheDocument()
     expect(screen.queryByText('Response Headers')).not.toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Request tab content
+  // ---------------------------------------------------------------------------
+
+  it('Request tab renders RequestTab component when active', () => {
+    renderModal()
+    fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
+    expect(screen.getByTestId('request-tab-mock')).toBeInTheDocument()
+  })
+
+  it('RequestTab is not in DOM when a different tab is active', () => {
+    renderModal()
+    expect(screen.queryByTestId('request-tab-mock')).not.toBeInTheDocument()
   })
 })

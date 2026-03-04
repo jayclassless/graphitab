@@ -1,0 +1,69 @@
+.gt-request-tab {
+  padding: var(--px-8) var(--px-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-16);
+}
+
+.gt-query-block {
+  margin: 0;
+  padding: var(--px-8) var(--px-12);
+  border-radius: var(--border-radius-4);
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+  color: hsl(var(--color-neutral));
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Raw query toggle button */
+.gt-raw-toggle {
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 1px var(--px-6);
+  border-radius: var(--border-radius-4);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  color: hsl(var(--color-neutral));
+  opacity: 0.6;
+  line-height: 1.4;
+}
+
+.gt-raw-toggle:hover {
+  opacity: 1;
+  background-color: hsla(var(--color-neutral), var(--alpha-background-medium));
+}
+
+.gt-raw-toggle--active {
+  opacity: 1;
+  border-color: hsla(var(--color-neutral), var(--alpha-background-heavy));
+  background-color: hsla(var(--color-neutral), var(--alpha-background-light));
+}
+
+/* Highlight.js token colors — all grounded in GraphiQL CSS variables */
+.gt-query-block .hljs-keyword {
+  color: hsl(var(--color-primary));
+  font-weight: 600;
+}
+
+.gt-query-block .hljs-variable {
+  color: hsl(var(--color-primary));
+  opacity: 0.8;
+}
+
+.gt-query-block .hljs-comment {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* react-json-view container — background comes from theme but we make it transparent;
+   wrap it in the same box style as the query block */
+.gt-json-block {
+  padding: var(--px-8) var(--px-12);
+  border-radius: var(--border-radius-4);
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+}
