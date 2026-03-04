@@ -27,6 +27,7 @@ type Props = {
 export function RequestTab({ request }: Props) {
   const isDark = useDarkMode()
   const [showRaw, setShowRaw] = useState(false)
+  const [showRawBody, setShowRawBody] = useState(false)
 
   const formattedQuery = useMemo(() => formatQuery(request.query), [request.query])
   const displayedQuery = showRaw ? request.query : formattedQuery
@@ -49,76 +50,105 @@ export function RequestTab({ request }: Props) {
   const jsonTheme = isDark ? 'monokai' : 'rjv-default'
   const jsonViewStyle = { background: 'transparent', padding: '0' }
 
+  const rawBodyToggle = request.rawBody ? (
+    <button
+      className={`gt-raw-toggle gt-raw-body-toggle${showRawBody ? ' gt-raw-toggle--active' : ''}`}
+      title="Toggle between parsed and raw body view"
+      onClick={() => setShowRawBody((v) => !v)}
+    >
+      {showRawBody ? 'Parsed Body' : 'Full Raw Body'}
+    </button>
+  ) : null
+
   return (
     <div className="gt-request-tab">
-      <section className="gt-request-section">
-        <h3 className="gt-headers-section-title">
-          Query
-          <button
-            className={`gt-raw-toggle${showRaw ? ' gt-raw-toggle--active' : ''}`}
-            title="Display original, unformatted value"
-            onClick={() => setShowRaw((v) => !v)}
-          >
-            Raw
-          </button>
-          <CopyButton text={displayedQuery} title="Copy query" />
-        </h3>
-        <pre className="gt-query-block">
-          {showRaw ? (
-            <code>{request.query}</code>
-          ) : (
-            <code dangerouslySetInnerHTML={{ __html: highlightedQuery }} />
-          )}
-        </pre>
-      </section>
-
-      {request.variables && !(parsedVariables && Object.keys(parsedVariables).length === 0) && (
-        <section className="gt-request-section">
-          <h3 className="gt-headers-section-title">
-            Variables
-            <CopyButton text={request.variables!} title="Copy variables" />
-          </h3>
-          {parsedVariables ? (
-            <div className="gt-json-block">
-              <ReactJsonView
-                src={parsedVariables}
-                name={null}
-                displayDataTypes={false}
-                enableClipboard={false}
-                theme={jsonTheme}
-                style={jsonViewStyle}
-              />
-            </div>
-          ) : (
+      {!showRawBody && (
+        <>
+          <section className="gt-request-section">
+            <h3 className="gt-headers-section-title">
+              Query
+              <button
+                className={`gt-raw-toggle${showRaw ? ' gt-raw-toggle--active' : ''}`}
+                title="Display original, unformatted value"
+                onClick={() => setShowRaw((v) => !v)}
+              >
+                Raw
+              </button>
+              <CopyButton text={displayedQuery} title="Copy query" />
+              {rawBodyToggle}
+            </h3>
             <pre className="gt-query-block">
-              <code>{request.variables}</code>
+              {showRaw ? (
+                <code>{request.query}</code>
+              ) : (
+                <code dangerouslySetInnerHTML={{ __html: highlightedQuery }} />
+              )}
             </pre>
+          </section>
+
+          {request.variables && !(parsedVariables && Object.keys(parsedVariables).length === 0) && (
+            <section className="gt-request-section">
+              <h3 className="gt-headers-section-title">
+                Variables
+                <CopyButton text={request.variables!} title="Copy variables" />
+              </h3>
+              {parsedVariables ? (
+                <div className="gt-json-block">
+                  <ReactJsonView
+                    src={parsedVariables}
+                    name={null}
+                    displayDataTypes={false}
+                    enableClipboard={false}
+                    theme={jsonTheme}
+                    style={jsonViewStyle}
+                  />
+                </div>
+              ) : (
+                <pre className="gt-query-block">
+                  <code>{request.variables}</code>
+                </pre>
+              )}
+            </section>
           )}
-        </section>
+
+          {request.extensions &&
+            !(parsedExtensions && Object.keys(parsedExtensions).length === 0) && (
+              <section className="gt-request-section">
+                <h3 className="gt-headers-section-title">
+                  Extensions
+                  <CopyButton text={request.extensions!} title="Copy extensions" />
+                </h3>
+                {parsedExtensions ? (
+                  <div className="gt-json-block">
+                    <ReactJsonView
+                      src={parsedExtensions}
+                      name={null}
+                      displayDataTypes={false}
+                      enableClipboard={false}
+                      theme={jsonTheme}
+                      style={jsonViewStyle}
+                    />
+                  </div>
+                ) : (
+                  <pre className="gt-query-block">
+                    <code>{request.extensions}</code>
+                  </pre>
+                )}
+              </section>
+            )}
+        </>
       )}
 
-      {request.extensions && !(parsedExtensions && Object.keys(parsedExtensions).length === 0) && (
+      {showRawBody && (
         <section className="gt-request-section">
           <h3 className="gt-headers-section-title">
-            Extensions
-            <CopyButton text={request.extensions!} title="Copy extensions" />
+            Raw Body
+            <CopyButton text={request.rawBody!} title="Copy raw body" />
+            {rawBodyToggle}
           </h3>
-          {parsedExtensions ? (
-            <div className="gt-json-block">
-              <ReactJsonView
-                src={parsedExtensions}
-                name={null}
-                displayDataTypes={false}
-                enableClipboard={false}
-                theme={jsonTheme}
-                style={jsonViewStyle}
-              />
-            </div>
-          ) : (
-            <pre className="gt-query-block">
-              <code>{request.extensions}</code>
-            </pre>
-          )}
+          <pre className="gt-query-block">
+            <code>{request.rawBody}</code>
+          </pre>
         </section>
       )}
     </div>

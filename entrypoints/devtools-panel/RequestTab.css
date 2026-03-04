@@ -6,3 +6,7 @@
   flex-direction: column;
   gap: var(--px-16);
 }
+
+.gt-raw-body-toggle {
+  margin-left: auto;
+}

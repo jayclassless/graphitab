@@ -46,6 +46,7 @@ export function useGraphQLRequests(autoClear: boolean): {
           query,
           variables,
           extensions,
+          rawBody: entry.request.postData?.text || undefined,
           response: responseText || undefined,
           responseHeaders: entry.response.headers,
         },

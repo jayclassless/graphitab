@@ -243,4 +243,83 @@ describe('RequestTab', () => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(extensions)
     })
   })
+
+  describe('Raw Body toggle', () => {
+    const title = 'Toggle between parsed and raw body view'
+
+    it('toggle button is absent when rawBody is undefined', () => {
+      render(<RequestTab request={makeRequest({ rawBody: undefined })} />)
+      expect(screen.queryByTitle(title)).not.toBeInTheDocument()
+    })
+
+    it('toggle button is present when rawBody is defined', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      expect(screen.getByTitle(title)).toBeInTheDocument()
+    })
+
+    it('toggle is labeled "Full Raw Body" by default', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      expect(screen.getByTitle(title)).toHaveTextContent('Full Raw Body')
+    })
+
+    it('toggle is inactive by default', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      expect(screen.getByTitle(title)).not.toHaveClass('gt-raw-toggle--active')
+    })
+
+    it('structured sections are visible by default', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      expect(screen.getByText('Query')).toBeInTheDocument()
+    })
+
+    it('Raw Body section is hidden by default', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      expect(screen.queryByText('Raw Body')).not.toBeInTheDocument()
+    })
+
+    it('clicking toggle shows Raw Body section and hides structured sections', () => {
+      const rawBody = '{"query":"{ hero }","variables":{"id":"1"}}'
+      render(<RequestTab request={makeRequest({ rawBody })} />)
+      fireEvent.click(screen.getByTitle(title))
+      expect(screen.getByText('Raw Body')).toBeInTheDocument()
+      expect(screen.queryByText('Query')).not.toBeInTheDocument()
+    })
+
+    it('toggle label changes to "Parsed Body" when active', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      fireEvent.click(screen.getByTitle(title))
+      expect(screen.getByTitle(title)).toHaveTextContent('Parsed Body')
+    })
+
+    it('clicking toggle marks it as active', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      fireEvent.click(screen.getByTitle(title))
+      expect(screen.getByTitle(title)).toHaveClass('gt-raw-toggle--active')
+    })
+
+    it('clicking toggle again restores structured sections', () => {
+      render(<RequestTab request={makeRequest({ rawBody: '{"query":"{ hero }"}' })} />)
+      fireEvent.click(screen.getByTitle(title))
+      fireEvent.click(screen.getByTitle(title))
+      expect(screen.getByText('Query')).toBeInTheDocument()
+      expect(screen.queryByText('Raw Body')).not.toBeInTheDocument()
+    })
+
+    it('displays the raw body verbatim in a code block when toggled', () => {
+      const rawBody = '{"query":"{ hero }","variables":{"id":"1"}}'
+      render(<RequestTab request={makeRequest({ rawBody })} />)
+      fireEvent.click(screen.getByTitle(title))
+      const pres = document.querySelectorAll('pre')
+      const block = Array.from(pres).find((p) => p.textContent === rawBody)
+      expect(block).toBeDefined()
+    })
+
+    it('copy button in Raw Body section writes raw body to clipboard', () => {
+      const rawBody = '{"query":"{ hero }","variables":{"id":"1"}}'
+      render(<RequestTab request={makeRequest({ rawBody })} />)
+      fireEvent.click(screen.getByTitle(title))
+      fireEvent.click(screen.getByTitle('Copy raw body'))
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(rawBody)
+    })
+  })
 })

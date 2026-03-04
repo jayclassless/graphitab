@@ -31,6 +31,7 @@ export type GraphQLRequest = {
   query: string
   variables?: string
   extensions?: string
+  rawBody?: string
   response?: string
   responseHeaders?: Array<{ name: string; value: string }>
 }
