@@ -107,7 +107,7 @@ body {
 }
 
 .gt-op-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 1.25em;
@@ -115,23 +115,21 @@ body {
   border-radius: var(--border-radius-4);
   font-size: 0.7em;
   font-weight: 700;
-  line-height: 1;
   margin-right: var(--px-6);
   flex-shrink: 0;
   color: white;
-  vertical-align: middle;
 }
 
 .gt-op-badge--query {
-  background-color: hsl(var(--color-primary));
+  background-color: #4b9eed;
 }
 
 .gt-op-badge--mutation {
-  background-color: hsl(var(--color-error));
+  background-color: hsl(var(--color-primary));
 }
 
 .gt-op-badge--subscription {
-  background-color: hsl(var(--color-primary));
+  background-color: #4b9eed;
   opacity: 0.65;
 }
 
