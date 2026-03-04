@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { browser } from 'wxt/browser'
 
 import { isGraphQLEntry, extractOperationInfo, extractQueryAndVariables } from './har'
 import type { HAREntry, GraphQLRequest } from './har'
@@ -50,9 +51,9 @@ export function useGraphQLRequests(autoClear: boolean): {
         },
       ])
     }
-    chrome.devtools.network.onRequestFinished.addListener(handleRequest)
+    browser.devtools.network.onRequestFinished.addListener(handleRequest)
     return () => {
-      chrome.devtools.network.onRequestFinished.removeListener(handleRequest)
+      browser.devtools.network.onRequestFinished.removeListener(handleRequest)
     }
   }, [])
 
@@ -61,8 +62,8 @@ export function useGraphQLRequests(autoClear: boolean): {
     function handleNavigated() {
       setRequests([])
     }
-    chrome.devtools.network.onNavigated.addListener(handleNavigated)
-    return () => chrome.devtools.network.onNavigated.removeListener(handleNavigated)
+    browser.devtools.network.onNavigated.addListener(handleNavigated)
+    return () => browser.devtools.network.onNavigated.removeListener(handleNavigated)
   }, [autoClear])
 
   return { requests, clear }
