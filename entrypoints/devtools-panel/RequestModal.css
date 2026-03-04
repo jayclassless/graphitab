@@ -22,11 +22,17 @@
 
 .gt-modal-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--px-4);
   padding: var(--px-8) var(--px-12);
   border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
   flex-shrink: 0;
+}
+
+.gt-modal-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .gt-modal-title {
@@ -34,6 +40,34 @@
   font-size: var(--font-size-body);
   font-weight: 600;
   color: hsl(var(--color-neutral));
+}
+
+.gt-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--px-6);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  color: hsla(var(--color-neutral), var(--alpha-tertiary));
+  min-width: 0;
+}
+
+.gt-modal-meta-method {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.gt-modal-meta-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-modal-meta-sep {
+  flex-shrink: 0;
+  opacity: 0.4;
 }
 
 .gt-modal-close {

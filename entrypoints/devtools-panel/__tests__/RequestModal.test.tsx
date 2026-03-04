@@ -52,6 +52,33 @@ describe('RequestModal', () => {
     expect(screen.getByText('MyQuery')).toBeInTheDocument()
   })
 
+  describe('metadata bar', () => {
+    it('displays the HTTP method', () => {
+      renderModal(makeRequest({ method: 'POST' }))
+      expect(screen.getByText('POST')).toBeInTheDocument()
+    })
+
+    it('displays the URL', () => {
+      renderModal(makeRequest({ url: 'https://api.example.com/graphql' }))
+      expect(screen.getByText('https://api.example.com/graphql')).toBeInTheDocument()
+    })
+
+    it('displays the status code', () => {
+      renderModal(makeRequest({ status: 200 }))
+      expect(screen.getByText('200')).toBeInTheDocument()
+    })
+
+    it('displays the formatted size', () => {
+      renderModal(makeRequest({ size: 512 }))
+      expect(screen.getByText('512 B')).toBeInTheDocument()
+    })
+
+    it('displays the formatted time', () => {
+      renderModal(makeRequest({ time: 123 }))
+      expect(screen.getByText('123ms')).toBeInTheDocument()
+    })
+  })
+
   it('renders all three tabs', () => {
     renderModal()
     expect(screen.getByRole('tab', { name: 'Headers' })).toBeInTheDocument()

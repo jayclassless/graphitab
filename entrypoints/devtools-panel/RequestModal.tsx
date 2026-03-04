@@ -1,3 +1,5 @@
+import { filesize } from 'filesize'
+import prettyMs from 'pretty-ms'
 import { useEffect, useState } from 'react'
 
 import './RequestModal.css'
@@ -36,10 +38,24 @@ export function RequestModal({ request, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="gt-modal-header">
-          <span className="gt-modal-title">{request.operationName}</span>
-          <button className="gt-modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+          <div className="gt-modal-header-top">
+            <span className="gt-modal-title">{request.operationName}</span>
+            <button className="gt-modal-close" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          </div>
+          <div className="gt-modal-meta">
+            <span className="gt-modal-meta-method">{request.method}</span>
+            <span className="gt-modal-meta-url">{request.url}</span>
+            <span
+              className={`gt-status-dot gt-status-dot--${request.status < 400 ? 'success' : 'error'}`}
+            />
+            <span>{request.status}</span>
+            <span className="gt-modal-meta-sep">·</span>
+            <span>{filesize(request.size)}</span>
+            <span className="gt-modal-meta-sep">·</span>
+            <span>{prettyMs(request.time)}</span>
+          </div>
         </div>
         <div className="gt-modal-tabs" role="tablist">
           {TABS.map((tab) => (
