@@ -2,7 +2,6 @@ import { cleanup, render, screen, fireEvent, act } from '@testing-library/react'
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
-
 import { CopyButton } from '../CopyButton'
 
 describe('CopyButton', () => {
@@ -81,5 +80,13 @@ describe('CopyButton', () => {
     render(<CopyButton text="hello" title="Copy value" className="my-btn" />)
     expect(screen.getByTitle('Copy value')).toHaveClass('my-btn')
     expect(screen.getByTitle('Copy value')).not.toHaveClass('gt-headers-copy-btn')
+  })
+
+  it('does not throw when clipboard write rejects', async () => {
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('denied'))
+    render(<CopyButton text="hello" title="Copy value" />)
+    fireEvent.click(screen.getByTitle('Copy value'))
+    // Allow microtasks to settle — the .catch(() => {}) swallows the error
+    await Promise.resolve()
   })
 })

@@ -107,6 +107,13 @@ describe('ContextMenu', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('pressing a non-Escape key does not call onClose', () => {
+    const onClose = vi.fn()
+    renderMenu(makeRequest(), onClose)
+    fireEvent.keyDown(document, { key: 'Enter' })
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('left-clicking outside the menu calls onClose', () => {
     const onClose = vi.fn()
     renderMenu(makeRequest(), onClose)

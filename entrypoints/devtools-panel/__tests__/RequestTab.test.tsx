@@ -5,8 +5,8 @@ import '@testing-library/jest-dom/vitest'
 
 vi.mock('../RequestTab.css', () => ({}))
 vi.mock('@microlink/react-json-view', () => ({
-  default: ({ src }: { src: object }) => (
-    <div data-testid="json-view" data-src={JSON.stringify(src)} />
+  default: ({ src, theme }: { src: object; theme?: string }) => (
+    <div data-testid="json-view" data-src={JSON.stringify(src)} data-theme={theme} />
   ),
 }))
 
@@ -45,173 +45,192 @@ describe('RequestTab', () => {
     vi.unstubAllGlobals()
   })
 
-  // ---------------------------------------------------------------------------
-  // Query section
-  // ---------------------------------------------------------------------------
+  describe('Query section', () => {
+    it('renders a "Query" section heading', () => {
+      render(<RequestTab request={makeRequest()} />)
+      expect(screen.getByText('Query')).toBeInTheDocument()
+    })
 
-  it('renders a "Query" section heading', () => {
-    render(<RequestTab request={makeRequest()} />)
-    expect(screen.getByText('Query')).toBeInTheDocument()
+    it('displays the query text in a code block', () => {
+      render(<RequestTab request={makeRequest()} />)
+      const code = document.querySelector('pre code')
+      expect(code).not.toBeNull()
+      expect(code!.textContent).toContain('GetHero')
+    })
+
+    it('formats a compact query using print()', () => {
+      render(<RequestTab request={makeRequest({ query: 'query GetHero{hero{name}}' })} />)
+      const code = document.querySelector('pre code')
+      // print() adds whitespace/newlines around braces
+      expect(code!.textContent).toMatch(/GetHero\s*\{/)
+      expect(code!.textContent).toContain('\n')
+    })
+
+    it('falls back to raw query string when the query is invalid GraphQL', () => {
+      const raw = '!@#invalid graphql'
+      render(<RequestTab request={makeRequest({ query: raw })} />)
+      const code = document.querySelector('pre code')
+      expect(code!.textContent).toBe(raw)
+    })
+
+    it('copy button is present in the Query section', () => {
+      render(<RequestTab request={makeRequest()} />)
+      expect(screen.getByTitle('Copy query')).toBeInTheDocument()
+    })
+
+    it('clicking copy query button writes the formatted query to clipboard', () => {
+      render(<RequestTab request={makeRequest({ query: 'query GetHero { hero { name } }' })} />)
+      fireEvent.click(screen.getByTitle('Copy query'))
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('GetHero'))
+    })
+
+    it('renders a "Raw" toggle button in the Query section', () => {
+      render(<RequestTab request={makeRequest()} />)
+      const btn = screen.getByRole('button', { name: 'Raw' })
+      expect(btn).toBeInTheDocument()
+      expect(btn).toHaveAttribute('title', 'Display original, unformatted value')
+    })
+
+    it('Raw toggle is inactive by default', () => {
+      render(<RequestTab request={makeRequest()} />)
+      expect(screen.getByRole('button', { name: 'Raw' })).not.toHaveClass('gt-raw-toggle--active')
+    })
+
+    it('clicking Raw toggle shows the unformatted query without syntax highlighting', () => {
+      const compactQuery = 'query GetHero{hero{name}}'
+      render(<RequestTab request={makeRequest({ query: compactQuery })} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
+      const code = document.querySelector('pre code')
+      expect(code!.textContent).toBe(compactQuery)
+      expect(code!.innerHTML).toBe(compactQuery)
+    })
+
+    it('clicking Raw toggle marks the button as active', () => {
+      render(<RequestTab request={makeRequest()} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
+      expect(screen.getByRole('button', { name: 'Raw' })).toHaveClass('gt-raw-toggle--active')
+    })
+
+    it('clicking Raw toggle again reverts to formatted query', () => {
+      const compactQuery = 'query GetHero{hero{name}}'
+      render(<RequestTab request={makeRequest({ query: compactQuery })} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
+      const code = document.querySelector('pre code')
+      expect(code!.textContent).not.toBe(compactQuery)
+      expect(code!.textContent).toContain('\n')
+    })
+
+    it('copy button copies the raw query when Raw toggle is active', () => {
+      const compactQuery = 'query GetHero{hero{name}}'
+      render(<RequestTab request={makeRequest({ query: compactQuery })} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
+      fireEvent.click(screen.getByTitle('Copy query'))
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(compactQuery)
+    })
   })
 
-  it('displays the query text in a code block', () => {
-    render(<RequestTab request={makeRequest()} />)
-    const code = document.querySelector('pre code')
-    expect(code).not.toBeNull()
-    expect(code!.textContent).toContain('GetHero')
+  describe('Variables section', () => {
+    it('Variables section is absent when variables is undefined', () => {
+      render(<RequestTab request={makeRequest({ variables: undefined })} />)
+      expect(screen.queryByText('Variables')).not.toBeInTheDocument()
+    })
+
+    it('renders "Variables" heading when variables is present', () => {
+      render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
+      expect(screen.getByText('Variables')).toBeInTheDocument()
+    })
+
+    it('renders ReactJsonView with parsed variables when variables is valid JSON object', () => {
+      render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
+      const jsonView = screen.getByTestId('json-view')
+      expect(jsonView).toBeInTheDocument()
+      expect(JSON.parse(jsonView.getAttribute('data-src')!)).toEqual({ id: '1' })
+    })
+
+    it('uses monokai theme in dark mode', () => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn(() => ({ matches: true }))
+      )
+      render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
+      expect(screen.getByTestId('json-view').getAttribute('data-theme')).toBe('monokai')
+    })
+
+    it('falls back to <pre> display when variables is not valid JSON', () => {
+      render(<RequestTab request={makeRequest({ variables: 'not-json' })} />)
+      expect(screen.queryByTestId('json-view')).not.toBeInTheDocument()
+      // The fallback pre block contains the raw string
+      const pres = document.querySelectorAll('pre')
+      const fallback = Array.from(pres).find((p) => p.textContent === 'not-json')
+      expect(fallback).toBeDefined()
+    })
+
+    it('falls back to <pre> display when variables is a JSON array', () => {
+      render(<RequestTab request={makeRequest({ variables: '[1,2,3]' })} />)
+      expect(screen.queryByTestId('json-view')).not.toBeInTheDocument()
+      const pres = document.querySelectorAll('pre')
+      const fallback = Array.from(pres).find((p) => p.textContent === '[1,2,3]')
+      expect(fallback).toBeDefined()
+    })
+
+    it('copy button is present in the Variables section', () => {
+      render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
+      expect(screen.getByTitle('Copy variables')).toBeInTheDocument()
+    })
+
+    it('clicking copy variables button writes the variables string to clipboard', () => {
+      const variables = '{\n  "id": "1"\n}'
+      render(<RequestTab request={makeRequest({ variables })} />)
+      fireEvent.click(screen.getByTitle('Copy variables'))
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(variables)
+    })
   })
 
-  it('formats a compact query using print()', () => {
-    render(<RequestTab request={makeRequest({ query: 'query GetHero{hero{name}}' })} />)
-    const code = document.querySelector('pre code')
-    // print() adds whitespace/newlines around braces
-    expect(code!.textContent).toMatch(/GetHero\s*\{/)
-    expect(code!.textContent).toContain('\n')
-  })
+  describe('Extensions section', () => {
+    it('Extensions section is absent when extensions is undefined', () => {
+      render(<RequestTab request={makeRequest({ extensions: undefined })} />)
+      expect(screen.queryByText('Extensions')).not.toBeInTheDocument()
+    })
 
-  it('falls back to raw query string when the query is invalid GraphQL', () => {
-    const raw = '!@#invalid graphql'
-    render(<RequestTab request={makeRequest({ query: raw })} />)
-    const code = document.querySelector('pre code')
-    expect(code!.textContent).toBe(raw)
-  })
+    it('renders "Extensions" heading when extensions is present', () => {
+      render(<RequestTab request={makeRequest({ extensions: '{"tracing":true}' })} />)
+      expect(screen.getByText('Extensions')).toBeInTheDocument()
+    })
 
-  it('copy button is present in the Query section', () => {
-    render(<RequestTab request={makeRequest()} />)
-    expect(screen.getByTitle('Copy query')).toBeInTheDocument()
-  })
+    it('renders ReactJsonView with parsed extensions when extensions is valid JSON object', () => {
+      render(<RequestTab request={makeRequest({ extensions: '{"tracing":true}' })} />)
+      const jsonView = screen.getByTestId('json-view')
+      expect(jsonView).toBeInTheDocument()
+      expect(JSON.parse(jsonView.getAttribute('data-src')!)).toEqual({ tracing: true })
+    })
 
-  it('clicking copy query button writes the formatted query to clipboard', () => {
-    render(<RequestTab request={makeRequest({ query: 'query GetHero { hero { name } }' })} />)
-    fireEvent.click(screen.getByTitle('Copy query'))
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('GetHero'))
-  })
+    it('falls back to <pre> display when extensions is not valid JSON', () => {
+      render(<RequestTab request={makeRequest({ extensions: 'not-json' })} />)
+      expect(screen.queryByTestId('json-view')).not.toBeInTheDocument()
+      const pres = document.querySelectorAll('pre')
+      const fallback = Array.from(pres).find((p) => p.textContent === 'not-json')
+      expect(fallback).toBeDefined()
+    })
 
-  it('renders a "Raw" toggle button in the Query section', () => {
-    render(<RequestTab request={makeRequest()} />)
-    const btn = screen.getByRole('button', { name: 'Raw' })
-    expect(btn).toBeInTheDocument()
-    expect(btn).toHaveAttribute('title', 'Display original, unformatted value')
-  })
+    it('falls back to <pre> display when extensions is a JSON array', () => {
+      render(<RequestTab request={makeRequest({ extensions: '[1,2,3]' })} />)
+      expect(screen.queryByTestId('json-view')).not.toBeInTheDocument()
+      const pres = document.querySelectorAll('pre')
+      const fallback = Array.from(pres).find((p) => p.textContent === '[1,2,3]')
+      expect(fallback).toBeDefined()
+    })
 
-  it('Raw toggle is inactive by default', () => {
-    render(<RequestTab request={makeRequest()} />)
-    expect(screen.getByRole('button', { name: 'Raw' })).not.toHaveClass('gt-raw-toggle--active')
-  })
+    it('copy button is present in the Extensions section', () => {
+      render(<RequestTab request={makeRequest({ extensions: '{"tracing":true}' })} />)
+      expect(screen.getByTitle('Copy extensions')).toBeInTheDocument()
+    })
 
-  it('clicking Raw toggle shows the unformatted query without syntax highlighting', () => {
-    const compactQuery = 'query GetHero{hero{name}}'
-    render(<RequestTab request={makeRequest({ query: compactQuery })} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
-    const code = document.querySelector('pre code')
-    expect(code!.textContent).toBe(compactQuery)
-    expect(code!.innerHTML).toBe(compactQuery)
-  })
-
-  it('clicking Raw toggle marks the button as active', () => {
-    render(<RequestTab request={makeRequest()} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
-    expect(screen.getByRole('button', { name: 'Raw' })).toHaveClass('gt-raw-toggle--active')
-  })
-
-  it('clicking Raw toggle again reverts to formatted query', () => {
-    const compactQuery = 'query GetHero{hero{name}}'
-    render(<RequestTab request={makeRequest({ query: compactQuery })} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
-    const code = document.querySelector('pre code')
-    expect(code!.textContent).not.toBe(compactQuery)
-    expect(code!.textContent).toContain('\n')
-  })
-
-  it('copy button copies the raw query when Raw toggle is active', () => {
-    const compactQuery = 'query GetHero{hero{name}}'
-    render(<RequestTab request={makeRequest({ query: compactQuery })} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Raw' }))
-    fireEvent.click(screen.getByTitle('Copy query'))
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(compactQuery)
-  })
-
-  // ---------------------------------------------------------------------------
-  // Variables section
-  // ---------------------------------------------------------------------------
-
-  it('Variables section is absent when variables is undefined', () => {
-    render(<RequestTab request={makeRequest({ variables: undefined })} />)
-    expect(screen.queryByText('Variables')).not.toBeInTheDocument()
-  })
-
-  it('renders "Variables" heading when variables is present', () => {
-    render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
-    expect(screen.getByText('Variables')).toBeInTheDocument()
-  })
-
-  it('renders ReactJsonView with parsed variables when variables is valid JSON object', () => {
-    render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
-    const jsonView = screen.getByTestId('json-view')
-    expect(jsonView).toBeInTheDocument()
-    expect(JSON.parse(jsonView.getAttribute('data-src')!)).toEqual({ id: '1' })
-  })
-
-  it('falls back to <pre> display when variables is not valid JSON', () => {
-    render(<RequestTab request={makeRequest({ variables: 'not-json' })} />)
-    expect(screen.queryByTestId('json-view')).not.toBeInTheDocument()
-    // The fallback pre block contains the raw string
-    const pres = document.querySelectorAll('pre')
-    const fallback = Array.from(pres).find((p) => p.textContent === 'not-json')
-    expect(fallback).toBeDefined()
-  })
-
-  it('copy button is present in the Variables section', () => {
-    render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
-    expect(screen.getByTitle('Copy variables')).toBeInTheDocument()
-  })
-
-  it('clicking copy variables button writes the variables string to clipboard', () => {
-    const variables = '{\n  "id": "1"\n}'
-    render(<RequestTab request={makeRequest({ variables })} />)
-    fireEvent.click(screen.getByTitle('Copy variables'))
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(variables)
-  })
-
-  // ---------------------------------------------------------------------------
-  // Extensions section
-  // ---------------------------------------------------------------------------
-
-  it('Extensions section is absent when extensions is undefined', () => {
-    render(<RequestTab request={makeRequest({ extensions: undefined })} />)
-    expect(screen.queryByText('Extensions')).not.toBeInTheDocument()
-  })
-
-  it('renders "Extensions" heading when extensions is present', () => {
-    render(<RequestTab request={makeRequest({ extensions: '{"tracing":true}' })} />)
-    expect(screen.getByText('Extensions')).toBeInTheDocument()
-  })
-
-  it('renders ReactJsonView with parsed extensions when extensions is valid JSON object', () => {
-    render(<RequestTab request={makeRequest({ extensions: '{"tracing":true}' })} />)
-    const jsonView = screen.getByTestId('json-view')
-    expect(jsonView).toBeInTheDocument()
-    expect(JSON.parse(jsonView.getAttribute('data-src')!)).toEqual({ tracing: true })
-  })
-
-  it('falls back to <pre> display when extensions is not valid JSON', () => {
-    render(<RequestTab request={makeRequest({ extensions: 'not-json' })} />)
-    expect(screen.queryByTestId('json-view')).not.toBeInTheDocument()
-    const pres = document.querySelectorAll('pre')
-    const fallback = Array.from(pres).find((p) => p.textContent === 'not-json')
-    expect(fallback).toBeDefined()
-  })
-
-  it('copy button is present in the Extensions section', () => {
-    render(<RequestTab request={makeRequest({ extensions: '{"tracing":true}' })} />)
-    expect(screen.getByTitle('Copy extensions')).toBeInTheDocument()
-  })
-
-  it('clicking copy extensions button writes the extensions string to clipboard', () => {
-    const extensions = '{\n  "tracing": true\n}'
-    render(<RequestTab request={makeRequest({ extensions })} />)
-    fireEvent.click(screen.getByTitle('Copy extensions'))
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(extensions)
+    it('clicking copy extensions button writes the extensions string to clipboard', () => {
+      const extensions = '{\n  "tracing": true\n}'
+      render(<RequestTab request={makeRequest({ extensions })} />)
+      fireEvent.click(screen.getByTitle('Copy extensions'))
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(extensions)
+    })
   })
 })

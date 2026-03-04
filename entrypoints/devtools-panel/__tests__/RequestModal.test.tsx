@@ -89,6 +89,13 @@ describe('RequestModal', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('pressing a non-Escape key does not call onClose', () => {
+    const onClose = vi.fn()
+    renderModal(makeRequest(), onClose)
+    fireEvent.keyDown(document, { key: 'Enter' })
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('clicking the backdrop calls onClose', () => {
     const onClose = vi.fn()
     const { container } = renderModal(makeRequest(), onClose)
@@ -112,50 +119,44 @@ describe('RequestModal', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  // ---------------------------------------------------------------------------
-  // Headers tab content
-  // ---------------------------------------------------------------------------
+  describe('Headers tab content', () => {
+    it('Headers tab renders Request Headers and Response Headers sections', () => {
+      renderModal()
+      expect(screen.getByText('Request Headers')).toBeInTheDocument()
+      expect(screen.getByText('Response Headers')).toBeInTheDocument()
+    })
 
-  it('Headers tab renders Request Headers and Response Headers sections', () => {
-    renderModal()
-    expect(screen.getByText('Request Headers')).toBeInTheDocument()
-    expect(screen.getByText('Response Headers')).toBeInTheDocument()
+    it('Headers tab content is not visible when a different tab is active', () => {
+      renderModal()
+      fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
+      expect(screen.queryByText('Request Headers')).not.toBeInTheDocument()
+      expect(screen.queryByText('Response Headers')).not.toBeInTheDocument()
+    })
   })
 
-  it('Headers tab content is not visible when a different tab is active', () => {
-    renderModal()
-    fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
-    expect(screen.queryByText('Request Headers')).not.toBeInTheDocument()
-    expect(screen.queryByText('Response Headers')).not.toBeInTheDocument()
+  describe('Request tab content', () => {
+    it('Request tab renders RequestTab component when active', () => {
+      renderModal()
+      fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
+      expect(screen.getByTestId('request-tab-mock')).toBeInTheDocument()
+    })
+
+    it('RequestTab is not in DOM when a different tab is active', () => {
+      renderModal()
+      expect(screen.queryByTestId('request-tab-mock')).not.toBeInTheDocument()
+    })
   })
 
-  // ---------------------------------------------------------------------------
-  // Request tab content
-  // ---------------------------------------------------------------------------
+  describe('Response tab content', () => {
+    it('Response tab renders ResponseTab component when active', () => {
+      renderModal()
+      fireEvent.click(screen.getByRole('tab', { name: 'Response' }))
+      expect(screen.getByTestId('response-tab-mock')).toBeInTheDocument()
+    })
 
-  it('Request tab renders RequestTab component when active', () => {
-    renderModal()
-    fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
-    expect(screen.getByTestId('request-tab-mock')).toBeInTheDocument()
-  })
-
-  it('RequestTab is not in DOM when a different tab is active', () => {
-    renderModal()
-    expect(screen.queryByTestId('request-tab-mock')).not.toBeInTheDocument()
-  })
-
-  // ---------------------------------------------------------------------------
-  // Response tab content
-  // ---------------------------------------------------------------------------
-
-  it('Response tab renders ResponseTab component when active', () => {
-    renderModal()
-    fireEvent.click(screen.getByRole('tab', { name: 'Response' }))
-    expect(screen.getByTestId('response-tab-mock')).toBeInTheDocument()
-  })
-
-  it('ResponseTab is not in DOM when a different tab is active', () => {
-    renderModal()
-    expect(screen.queryByTestId('response-tab-mock')).not.toBeInTheDocument()
+    it('ResponseTab is not in DOM when a different tab is active', () => {
+      renderModal()
+      expect(screen.queryByTestId('response-tab-mock')).not.toBeInTheDocument()
+    })
   })
 })
