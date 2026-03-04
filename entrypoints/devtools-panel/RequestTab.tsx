@@ -72,7 +72,7 @@ export function RequestTab({ request }: Props) {
         </pre>
       </section>
 
-      {request.variables && (
+      {request.variables && !(parsedVariables && Object.keys(parsedVariables).length === 0) && (
         <section className="gt-request-section">
           <h3 className="gt-headers-section-title">
             Variables
@@ -97,7 +97,7 @@ export function RequestTab({ request }: Props) {
         </section>
       )}
 
-      {request.extensions && (
+      {request.extensions && !(parsedExtensions && Object.keys(parsedExtensions).length === 0) && (
         <section className="gt-request-section">
           <h3 className="gt-headers-section-title">
             Extensions

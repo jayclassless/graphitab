@@ -141,6 +141,11 @@ describe('RequestTab', () => {
       expect(screen.getByText('Variables')).toBeInTheDocument()
     })
 
+    it('Variables section is absent when variables is an empty object', () => {
+      render(<RequestTab request={makeRequest({ variables: '{}' })} />)
+      expect(screen.queryByText('Variables')).not.toBeInTheDocument()
+    })
+
     it('renders ReactJsonView with parsed variables when variables is valid JSON object', () => {
       render(<RequestTab request={makeRequest({ variables: '{"id":"1"}' })} />)
       const jsonView = screen.getByTestId('json-view')
@@ -196,6 +201,11 @@ describe('RequestTab', () => {
     it('renders "Extensions" heading when extensions is present', () => {
       render(<RequestTab request={makeRequest({ extensions: '{"tracing":true}' })} />)
       expect(screen.getByText('Extensions')).toBeInTheDocument()
+    })
+
+    it('Extensions section is absent when extensions is an empty object', () => {
+      render(<RequestTab request={makeRequest({ extensions: '{}' })} />)
+      expect(screen.queryByText('Extensions')).not.toBeInTheDocument()
     })
 
     it('renders ReactJsonView with parsed extensions when extensions is valid JSON object', () => {
