@@ -5,6 +5,7 @@ import graphql from 'highlight.js/lib/languages/graphql'
 import { useMemo, useState } from 'react'
 
 import './RequestTab.css'
+import { CopyButton } from './CopyButton'
 import type { GraphQLRequest } from './har'
 
 hljs.registerLanguage('graphql', graphql)
@@ -26,27 +27,6 @@ function parseJsonObject(str: string): Record<string, unknown> | null {
     return null
   }
 }
-
-function copyText(text: string) {
-  navigator.clipboard.writeText(text).catch(() => {})
-}
-
-const CopyIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <rect x="9" y="2" width="6" height="4" rx="1" />
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-  </svg>
-)
 
 type Props = {
   request: GraphQLRequest
@@ -84,17 +64,12 @@ export function RequestTab({ request }: Props) {
           Query
           <button
             className={`gt-raw-toggle${showRaw ? ' gt-raw-toggle--active' : ''}`}
+            title="Display original, unformatted value"
             onClick={() => setShowRaw((v) => !v)}
           >
             Raw
           </button>
-          <button
-            className="gt-headers-copy-btn"
-            title="Copy query"
-            onClick={() => copyText(displayedQuery)}
-          >
-            <CopyIcon />
-          </button>
+          <CopyButton text={displayedQuery} title="Copy query" />
         </h3>
         <pre className="gt-query-block">
           {showRaw ? (
@@ -109,13 +84,7 @@ export function RequestTab({ request }: Props) {
         <section className="gt-request-section">
           <h3 className="gt-headers-section-title">
             Variables
-            <button
-              className="gt-headers-copy-btn"
-              title="Copy variables"
-              onClick={() => copyText(request.variables!)}
-            >
-              <CopyIcon />
-            </button>
+            <CopyButton text={request.variables!} title="Copy variables" />
           </h3>
           {parsedVariables ? (
             <div className="gt-json-block">
@@ -140,13 +109,7 @@ export function RequestTab({ request }: Props) {
         <section className="gt-request-section">
           <h3 className="gt-headers-section-title">
             Extensions
-            <button
-              className="gt-headers-copy-btn"
-              title="Copy extensions"
-              onClick={() => copyText(request.extensions!)}
-            >
-              <CopyIcon />
-            </button>
+            <CopyButton text={request.extensions!} title="Copy extensions" />
           </h3>
           {parsedExtensions ? (
             <div className="gt-json-block">

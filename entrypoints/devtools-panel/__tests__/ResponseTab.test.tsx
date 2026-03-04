@@ -125,7 +125,9 @@ describe('ResponseTab', () => {
 
   it('Raw toggle button is present when response is present', () => {
     render(<ResponseTab request={makeRequest({ response: '{"data":{}}' })} />)
-    expect(screen.getByRole('button', { name: 'Raw' })).toBeInTheDocument()
+    const btn = screen.getByRole('button', { name: 'Raw' })
+    expect(btn).toBeInTheDocument()
+    expect(btn).toHaveAttribute('title', 'Display original, unformatted value')
   })
 
   it('Raw toggle is inactive by default', () => {

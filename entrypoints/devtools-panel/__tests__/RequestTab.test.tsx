@@ -89,7 +89,9 @@ describe('RequestTab', () => {
 
   it('renders a "Raw" toggle button in the Query section', () => {
     render(<RequestTab request={makeRequest()} />)
-    expect(screen.getByRole('button', { name: 'Raw' })).toBeInTheDocument()
+    const btn = screen.getByRole('button', { name: 'Raw' })
+    expect(btn).toBeInTheDocument()
+    expect(btn).toHaveAttribute('title', 'Display original, unformatted value')
   })
 
   it('Raw toggle is inactive by default', () => {

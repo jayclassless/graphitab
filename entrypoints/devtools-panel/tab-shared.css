@@ -6,8 +6,8 @@
   color: hsl(var(--color-neutral));
   font-family: var(--font-family);
   font-size: var(--font-size-body);
-  overflow-x: auto;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 
 /* Raw toggle button */
