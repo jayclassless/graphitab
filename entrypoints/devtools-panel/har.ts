@@ -215,3 +215,13 @@ export function buildCurlCommand(request: GraphQLRequest): string {
 
   return parts.join(' ')
 }
+
+export function parseJsonObject(str: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(str)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed
+    return null
+  } catch {
+    return null
+  }
+}

@@ -28,8 +28,8 @@ export function HeadersTable({ title, headers }: Props) {
             </tr>
           </thead>
           <tbody>
-            {visible.map(({ name, value }) => (
-              <tr key={name} className="gt-headers-row">
+            {visible.map(({ name, value }, index) => (
+              <tr key={index} className="gt-headers-row">
                 <td>{name}</td>
                 <td>{value}</td>
                 <td className="gt-headers-row-actions">

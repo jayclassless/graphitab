@@ -6,7 +6,9 @@ import { useMemo, useState } from 'react'
 
 import './RequestTab.css'
 import { CopyButton } from './CopyButton'
+import { parseJsonObject } from './har'
 import type { GraphQLRequest } from './har'
+import { useDarkMode } from './useDarkMode'
 
 hljs.registerLanguage('graphql', graphql)
 
@@ -18,22 +20,12 @@ function formatQuery(raw: string): string {
   }
 }
 
-function parseJsonObject(str: string): Record<string, unknown> | null {
-  try {
-    const parsed = JSON.parse(str)
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed
-    return null
-  } catch {
-    return null
-  }
-}
-
 type Props = {
   request: GraphQLRequest
 }
 
 export function RequestTab({ request }: Props) {
-  const isDark = useMemo(() => window.matchMedia('(prefers-color-scheme: dark)').matches, [])
+  const isDark = useDarkMode()
   const [showRaw, setShowRaw] = useState(false)
 
   const formattedQuery = useMemo(() => formatQuery(request.query), [request.query])

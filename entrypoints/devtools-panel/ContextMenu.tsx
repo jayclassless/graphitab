@@ -22,8 +22,8 @@ function prettyJson(value: string): string {
 function copyAndClose(text: string, onClose: () => void) {
   navigator.clipboard
     .writeText(text)
-    .finally(onClose)
     .catch(() => {})
+    .finally(onClose)
 }
 
 export function ContextMenu({ x, y, request, onClose }: Props) {

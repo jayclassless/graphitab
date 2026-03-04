@@ -33,7 +33,7 @@ describe('ResponseTab', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'matchMedia',
-      vi.fn(() => ({ matches: false }))
+      vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
     )
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -78,7 +78,7 @@ describe('ResponseTab', () => {
     it('uses monokai theme in dark mode', () => {
       vi.stubGlobal(
         'matchMedia',
-        vi.fn(() => ({ matches: true }))
+        vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
       )
       render(<ResponseTab request={makeRequest({ response: '{"data":{}}' })} />)
       expect(screen.getByTestId('json-view').getAttribute('data-theme')).toBe('monokai')

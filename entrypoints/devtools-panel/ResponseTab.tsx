@@ -3,24 +3,16 @@ import { useMemo, useState } from 'react'
 
 import './ResponseTab.css'
 import { CopyButton } from './CopyButton'
+import { parseJsonObject } from './har'
 import type { GraphQLRequest } from './har'
-
-function parseJsonObject(str: string): Record<string, unknown> | null {
-  try {
-    const parsed = JSON.parse(str)
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed
-    return null
-  } catch {
-    return null
-  }
-}
+import { useDarkMode } from './useDarkMode'
 
 type Props = {
   request: GraphQLRequest
 }
 
 export function ResponseTab({ request }: Props) {
-  const isDark = useMemo(() => window.matchMedia('(prefers-color-scheme: dark)').matches, [])
+  const isDark = useDarkMode()
   const [showRaw, setShowRaw] = useState(false)
 
   const parsedResponse = useMemo(
