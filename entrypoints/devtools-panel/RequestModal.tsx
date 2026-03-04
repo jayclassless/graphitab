@@ -4,6 +4,7 @@ import './RequestModal.css'
 import type { GraphQLRequest } from './har'
 import { HeadersTable } from './HeadersTable'
 import { RequestTab } from './RequestTab'
+import { ResponseTab } from './ResponseTab'
 
 type Tab = 'headers' | 'request' | 'response'
 
@@ -61,6 +62,7 @@ export function RequestModal({ request, onClose }: Props) {
             </div>
           )}
           {activeTab === 'request' && <RequestTab request={request} />}
+          {activeTab === 'response' && <ResponseTab request={request} />}
         </div>
       </div>
     </div>

@@ -7,6 +7,9 @@ vi.mock('../RequestModal.css', () => ({}))
 vi.mock('../RequestTab', () => ({
   RequestTab: () => <div data-testid="request-tab-mock" />,
 }))
+vi.mock('../ResponseTab', () => ({
+  ResponseTab: () => <div data-testid="response-tab-mock" />,
+}))
 
 import type { GraphQLRequest } from '../har'
 import { RequestModal } from '../RequestModal'
@@ -139,5 +142,20 @@ describe('RequestModal', () => {
   it('RequestTab is not in DOM when a different tab is active', () => {
     renderModal()
     expect(screen.queryByTestId('request-tab-mock')).not.toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Response tab content
+  // ---------------------------------------------------------------------------
+
+  it('Response tab renders ResponseTab component when active', () => {
+    renderModal()
+    fireEvent.click(screen.getByRole('tab', { name: 'Response' }))
+    expect(screen.getByTestId('response-tab-mock')).toBeInTheDocument()
+  })
+
+  it('ResponseTab is not in DOM when a different tab is active', () => {
+    renderModal()
+    expect(screen.queryByTestId('response-tab-mock')).not.toBeInTheDocument()
   })
 })

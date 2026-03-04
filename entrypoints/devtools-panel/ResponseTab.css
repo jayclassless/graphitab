@@ -1,6 +1,6 @@
 @import './tab-shared.css';
 
-.gt-request-tab {
+.gt-response-tab {
   padding: var(--px-8) var(--px-12);
   display: flex;
   flex-direction: column;
