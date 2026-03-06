@@ -8,6 +8,9 @@ export default defineConfig({
     name: 'GraphiTab',
     homepage_url: 'https://github.com/jayclassless/graphitab',
     permissions: ['storage'],
+    content_security_policy: {
+      extension_pages: "script-src 'self'; object-src 'self';",
+    },
     incognito: 'split',
     browser_specific_settings: {
       gecko: {

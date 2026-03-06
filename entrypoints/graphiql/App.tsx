@@ -109,10 +109,11 @@ export default function App() {
     }
   }, [profile])
 
-  const fetcher = useMemo(
-    () => (profile ? createGraphiQLFetcher({ url: profile.url, headers: profile.headers }) : null),
-    [profile]
-  )
+  const fetcher = useMemo(() => {
+    if (!profile) return null
+    const subscriptionUrl = profile.url.replace(/^http/, 'ws')
+    return createGraphiQLFetcher({ url: profile.url, headers: profile.headers, subscriptionUrl })
+  }, [profile])
 
   const settingsStorage = useMemo(
     () => (profile ? createGraphiQLSettingsStorage(profile.id) : null),

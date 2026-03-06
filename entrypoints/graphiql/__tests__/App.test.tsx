@@ -145,6 +145,7 @@ describe('GraphiQL App', () => {
       expect(mockCreateFetcher).toHaveBeenCalledWith({
         url: 'https://test.com/graphql',
         headers: undefined,
+        subscriptionUrl: 'wss://test.com/graphql',
       })
     })
   })
@@ -161,6 +162,7 @@ describe('GraphiQL App', () => {
       expect(mockCreateFetcher).toHaveBeenCalledWith({
         url: 'https://test.com/graphql',
         headers: { Authorization: 'Bearer token123' },
+        subscriptionUrl: 'wss://test.com/graphql',
       })
     })
   })
@@ -247,6 +249,7 @@ describe('GraphiQL App', () => {
     expect(mockCreateFetcher).toHaveBeenCalledWith({
       url: 'https://updated.com/graphql',
       headers: undefined,
+      subscriptionUrl: 'wss://updated.com/graphql',
     })
   })
 
