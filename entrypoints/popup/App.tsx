@@ -28,6 +28,7 @@ export default function App() {
   const [url, setUrl] = useState('')
   const [headers, setHeaders] = useState<Array<{ id: number; key: string; value: string }>>([])
   const headerIdRef = useRef(0)
+  const nameInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
 
   const sortedProfiles = useMemo(
@@ -59,6 +60,12 @@ export default function App() {
   useEffect(() => {
     loadProfiles()
   }, [])
+
+  useEffect(() => {
+    if (formMode.kind === 'create') {
+      nameInputRef.current?.focus()
+    }
+  }, [formMode.kind])
 
   const headersToRecord = (): Record<string, string> | undefined => {
     const filtered = headers.filter((h) => h.key.trim() !== '')
@@ -190,6 +197,7 @@ export default function App() {
       {formMode.kind !== 'closed' ? (
         <div className="popup-form">
           <input
+            ref={nameInputRef}
             className="gt-input"
             type="text"
             placeholder="Name"

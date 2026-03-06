@@ -131,6 +131,12 @@ describe('Popup App', () => {
       expect(screen.getByPlaceholderText('GraphQL endpoint URL')).toBeInTheDocument()
     })
 
+    it('focuses the name field when the create form opens', async () => {
+      const { user } = await renderApp()
+      await user.click(screen.getByText('+ New Profile'))
+      expect(screen.getByPlaceholderText('Name')).toHaveFocus()
+    })
+
     it('hides form and resets inputs on Cancel', async () => {
       const { user } = await renderApp()
       await user.click(screen.getByText('+ New Profile'))
