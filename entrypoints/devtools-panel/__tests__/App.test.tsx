@@ -439,5 +439,77 @@ describe('DevTools Panel App', () => {
       fireEvent.keyDown(document, { key: 'Escape' })
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
+
+    it('Previous request button is disabled when the first request is open', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[0])
+      expect(screen.getByRole('button', { name: 'Previous request' })).toBeDisabled()
+    })
+
+    it('Next request button is disabled when the last request is open', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[1])
+      expect(screen.getByRole('button', { name: 'Next request' })).toBeDisabled()
+    })
+
+    it('clicking Next request advances to the next request in the list', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[0])
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'GetHero')
+      fireEvent.click(screen.getByRole('button', { name: 'Next request' }))
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'CreateUser')
+    })
+
+    it('clicking Previous request goes back to the previous request in the list', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[1])
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'CreateUser')
+      fireEvent.click(screen.getByRole('button', { name: 'Previous request' }))
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'GetHero')
+    })
+
+    it('ArrowRight navigates to the next request while the modal is open', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[0])
+      fireEvent.keyDown(document, { key: 'ArrowRight' })
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'CreateUser')
+    })
+
+    it('ArrowLeft navigates to the previous request while the modal is open', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[1])
+      fireEvent.keyDown(document, { key: 'ArrowLeft' })
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'GetHero')
+    })
   })
 })

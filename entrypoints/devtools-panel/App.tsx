@@ -175,9 +175,24 @@ export default function App() {
           onClose={() => setContextMenu(null)}
         />
       )}
-      {selectedRequest && (
-        <RequestModal request={selectedRequest} onClose={() => setSelectedRequest(null)} />
-      )}
+      {selectedRequest &&
+        (() => {
+          const selectedIndex = visible.findIndex((r) => r.id === selectedRequest.id)
+          return (
+            <RequestModal
+              request={selectedRequest}
+              onClose={() => setSelectedRequest(null)}
+              onPrev={
+                selectedIndex > 0 ? () => setSelectedRequest(visible[selectedIndex - 1]) : undefined
+              }
+              onNext={
+                selectedIndex < visible.length - 1
+                  ? () => setSelectedRequest(visible[selectedIndex + 1])
+                  : undefined
+              }
+            />
+          )
+        })()}
     </div>
   )
 }

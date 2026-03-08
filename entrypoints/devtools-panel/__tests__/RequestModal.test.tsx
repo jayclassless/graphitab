@@ -4,6 +4,13 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
 vi.mock('../RequestModal.css', () => ({}))
+vi.mock('../ModalActionsMenu', () => ({
+  ModalActionsMenu: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="modal-actions-menu" role="menu">
+      <button onClick={onClose}>Close menu</button>
+    </div>
+  ),
+}))
 vi.mock('../RequestTab', () => ({
   RequestTab: ({ request }: { request: { query: string } }) => (
     <div data-testid="request-tab-mock" data-query={request.query} />
@@ -37,6 +44,13 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
 
 function renderModal(req: GraphQLRequest = makeRequest(), onClose = vi.fn()) {
   return render(<RequestModal request={req} onClose={onClose} />)
+}
+
+function renderWithNav(
+  req = makeRequest(),
+  props: { onPrev?: () => void; onNext?: () => void } = {}
+) {
+  return render(<RequestModal request={req} onClose={vi.fn()} {...props} />)
 }
 
 describe('RequestModal', () => {
@@ -304,7 +318,7 @@ describe('RequestModal', () => {
       expect(select.value).toBe('0')
     })
 
-    it('dropdown resets to first operation when a new request is opened', () => {
+    it('resets to first operation when a new request is opened', () => {
       const { rerender } = renderModal(makeBatchRequest())
       fireEvent.change(screen.getByRole('combobox', { name: 'Select operation' }), {
         target: { value: '1' },
@@ -317,6 +331,94 @@ describe('RequestModal', () => {
       expect(
         (screen.getByRole('combobox', { name: 'Select operation' }) as HTMLSelectElement).value
       ).toBe('0')
+    })
+  })
+
+  describe('navigation buttons', () => {
+    it('renders Previous request and Next request buttons', () => {
+      renderWithNav()
+      expect(screen.getByRole('button', { name: 'Previous request' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Next request' })).toBeInTheDocument()
+    })
+
+    it('Previous request button is disabled when onPrev is not provided', () => {
+      renderWithNav()
+      expect(screen.getByRole('button', { name: 'Previous request' })).toBeDisabled()
+    })
+
+    it('Next request button is disabled when onNext is not provided', () => {
+      renderWithNav()
+      expect(screen.getByRole('button', { name: 'Next request' })).toBeDisabled()
+    })
+
+    it('Previous request button is enabled when onPrev is provided', () => {
+      renderWithNav(makeRequest(), { onPrev: vi.fn() })
+      expect(screen.getByRole('button', { name: 'Previous request' })).toBeEnabled()
+    })
+
+    it('Next request button is enabled when onNext is provided', () => {
+      renderWithNav(makeRequest(), { onNext: vi.fn() })
+      expect(screen.getByRole('button', { name: 'Next request' })).toBeEnabled()
+    })
+
+    it('clicking Previous request button calls onPrev', () => {
+      const onPrev = vi.fn()
+      renderWithNav(makeRequest(), { onPrev })
+      fireEvent.click(screen.getByRole('button', { name: 'Previous request' }))
+      expect(onPrev).toHaveBeenCalledOnce()
+    })
+
+    it('clicking Next request button calls onNext', () => {
+      const onNext = vi.fn()
+      renderWithNav(makeRequest(), { onNext })
+      fireEvent.click(screen.getByRole('button', { name: 'Next request' }))
+      expect(onNext).toHaveBeenCalledOnce()
+    })
+
+    it('pressing ArrowLeft calls onPrev', () => {
+      const onPrev = vi.fn()
+      renderWithNav(makeRequest(), { onPrev })
+      fireEvent.keyDown(document, { key: 'ArrowLeft' })
+      expect(onPrev).toHaveBeenCalledOnce()
+    })
+
+    it('pressing ArrowRight calls onNext', () => {
+      const onNext = vi.fn()
+      renderWithNav(makeRequest(), { onNext })
+      fireEvent.keyDown(document, { key: 'ArrowRight' })
+      expect(onNext).toHaveBeenCalledOnce()
+    })
+
+    it('pressing ArrowLeft does nothing when onPrev is not provided', () => {
+      renderWithNav()
+      expect(() => fireEvent.keyDown(document, { key: 'ArrowLeft' })).not.toThrow()
+    })
+
+    it('pressing ArrowRight does nothing when onNext is not provided', () => {
+      renderWithNav()
+      expect(() => fireEvent.keyDown(document, { key: 'ArrowRight' })).not.toThrow()
+    })
+  })
+
+  describe('actions menu', () => {
+    it('renders the More actions button', () => {
+      renderWithNav()
+      expect(screen.getByRole('button', { name: 'More actions' })).toBeInTheDocument()
+    })
+
+    it('clicking More actions button opens the actions menu', () => {
+      renderWithNav()
+      expect(screen.queryByTestId('modal-actions-menu')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+      expect(screen.getByTestId('modal-actions-menu')).toBeInTheDocument()
+    })
+
+    it('actions menu is closed after its onClose callback is invoked', () => {
+      renderWithNav()
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+      expect(screen.getByTestId('modal-actions-menu')).toBeInTheDocument()
+      fireEvent.click(screen.getByText('Close menu'))
+      expect(screen.queryByTestId('modal-actions-menu')).not.toBeInTheDocument()
     })
   })
 })

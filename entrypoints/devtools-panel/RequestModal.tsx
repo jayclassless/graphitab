@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import './RequestModal.css'
 import type { GraphQLRequest } from './har'
 import { HeadersTable } from './HeadersTable'
+import { ModalActionsMenu } from './ModalActionsMenu'
 import { OpTypeBadge } from './OpTypeBadge'
 import { RequestTab } from './RequestTab'
 import { ResponseTab } from './ResponseTab'
@@ -14,13 +15,16 @@ type Tab = 'headers' | 'request' | 'response'
 type Props = {
   request: GraphQLRequest
   onClose: () => void
+  onPrev?: () => void
+  onNext?: () => void
 }
 
 const TABS: Tab[] = ['headers', 'request', 'response']
 
-export function RequestModal({ request, onClose }: Props) {
+export function RequestModal({ request, onClose, onPrev, onNext }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('headers')
   const [selectedOpIndex, setSelectedOpIndex] = useState(0)
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 
   useEffect(() => {
     setSelectedOpIndex(0)
@@ -29,10 +33,12 @@ export function RequestModal({ request, onClose }: Props) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft') onPrev?.()
+      if (e.key === 'ArrowRight') onNext?.()
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [onClose, onPrev, onNext])
 
   return (
     <div className="gt-modal-backdrop" onClick={onClose}>
@@ -83,9 +89,41 @@ export function RequestModal({ request, onClose }: Props) {
                 {request.operationName}
               </span>
             )}
-            <button className="gt-modal-close" onClick={onClose} aria-label="Close">
-              ×
-            </button>
+            <div className="gt-modal-header-actions">
+              <button
+                className="gt-modal-nav-btn"
+                onClick={onPrev}
+                disabled={!onPrev}
+                aria-label="Previous request"
+              >
+                ‹
+              </button>
+              <button
+                className="gt-modal-nav-btn"
+                onClick={onNext}
+                disabled={!onNext}
+                aria-label="Next request"
+              >
+                ›
+              </button>
+              <div className="gt-modal-actions-anchor">
+                <button
+                  className="gt-modal-nav-btn"
+                  onClick={() => setActionsMenuOpen((o) => !o)}
+                  aria-label="More actions"
+                  aria-haspopup="menu"
+                  aria-expanded={actionsMenuOpen}
+                >
+                  ⋮
+                </button>
+                {actionsMenuOpen && (
+                  <ModalActionsMenu request={request} onClose={() => setActionsMenuOpen(false)} />
+                )}
+              </div>
+              <button className="gt-modal-close" onClick={onClose} aria-label="Close">
+                ×
+              </button>
+            </div>
           </div>
           <div className="gt-modal-meta">
             <span className="gt-modal-meta-method">{request.method}</span>

@@ -116,6 +116,39 @@
   opacity: 0.4;
 }
 
+.gt-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--px-4);
+  flex-shrink: 0;
+}
+
+.gt-modal-actions-anchor {
+  position: relative;
+}
+
+.gt-modal-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: hsl(var(--color-neutral));
+  opacity: 0.75;
+  padding: var(--px-4) var(--px-6);
+  border-radius: var(--border-radius-4);
+}
+
+.gt-modal-nav-btn:hover:not(:disabled) {
+  opacity: 1;
+  background-color: hsla(var(--color-neutral), var(--alpha-background-medium));
+}
+
+.gt-modal-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .gt-modal-close {
   background: none;
   border: none;
