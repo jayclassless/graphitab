@@ -3,6 +3,7 @@ import prettyMs from 'pretty-ms'
 import type { RowComponentProps } from 'react-window'
 
 import type { GraphQLRequest } from './har'
+import { OpTypeBadge } from './OpTypeBadge'
 
 export const ROW_HEIGHT = 32
 
@@ -33,15 +34,7 @@ export function RequestRow({
       }}
     >
       <div title={req.operationName}>
-        <span className={`gt-op-badge gt-op-badge--${req.operationType}`}>
-          {req.operationType === 'mutation'
-            ? 'M'
-            : req.operationType === 'subscription'
-              ? 'S'
-              : req.operationType === 'batch'
-                ? 'B'
-                : 'Q'}
-        </span>
+        <OpTypeBadge type={req.operationType} />
         {req.operationName}
         {req.batchedOperations && req.batchedOperations.length > 1 && (
           <span className="gt-batch-extra-count">+{req.batchedOperations.length - 1}</span>

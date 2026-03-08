@@ -80,6 +80,8 @@
 }
 
 .gt-modal-title {
+  display: flex;
+  align-items: center;
   font-family: var(--font-family);
   font-size: var(--font-size-body);
   font-weight: 600;

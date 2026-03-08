@@ -106,42 +106,6 @@ body {
   background-color: hsl(var(--color-error));
 }
 
-.gt-op-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25em;
-  height: 1.25em;
-  border-radius: var(--border-radius-4);
-  font-size: 0.7em;
-  font-weight: 700;
-  margin-right: var(--px-6);
-  flex-shrink: 0;
-  color: white;
-}
-
-.gt-op-badge--query {
-  background-color: #4b9eed;
-}
-
-.gt-op-badge--mutation {
-  background-color: hsl(var(--color-primary));
-}
-
-.gt-op-badge--subscription {
-  background-color: #4b9eed;
-  opacity: 0.65;
-}
-
-.gt-op-badge--unknown {
-  background-color: hsla(var(--color-neutral), var(--alpha-background-heavy));
-  color: hsl(var(--color-neutral));
-}
-
-.gt-op-badge--batch {
-  background-color: #b8860b;
-}
-
 .gt-batch-extra-count {
   margin-left: var(--px-4);
   font-size: 0.85em;

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import './RequestModal.css'
 import type { GraphQLRequest } from './har'
 import { HeadersTable } from './HeadersTable'
+import { OpTypeBadge } from './OpTypeBadge'
 import { RequestTab } from './RequestTab'
 import { ResponseTab } from './ResponseTab'
 
@@ -46,6 +47,7 @@ export function RequestModal({ request, onClose }: Props) {
           <div className="gt-modal-header-top">
             {request.batchedOperations ? (
               <div className="gt-modal-batch-nav">
+                <OpTypeBadge type={request.batchedOperations[selectedOpIndex].operationType} />
                 <select
                   className="gt-modal-title-select"
                   value={selectedOpIndex}
@@ -76,7 +78,10 @@ export function RequestModal({ request, onClose }: Props) {
                 </button>
               </div>
             ) : (
-              <span className="gt-modal-title">{request.operationName}</span>
+              <span className="gt-modal-title">
+                <OpTypeBadge type={request.operationType} />
+                {request.operationName}
+              </span>
             )}
             <button className="gt-modal-close" onClick={onClose} aria-label="Close">
               ×
