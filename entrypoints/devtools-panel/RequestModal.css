@@ -35,6 +35,50 @@
   justify-content: space-between;
 }
 
+.gt-modal-batch-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--px-4);
+  min-width: 0;
+}
+
+.gt-modal-title-select {
+  padding: var(--px-4) var(--px-8);
+  border: none;
+  border-radius: var(--border-radius-4);
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+  color: hsl(var(--color-neutral));
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  min-width: 0;
+}
+
+.gt-modal-title-select:focus {
+  outline: hsla(var(--color-neutral), var(--alpha-background-heavy)) auto 1px;
+}
+
+.gt-modal-batch-nav-btn {
+  padding: var(--px-4) var(--px-8);
+  border: none;
+  border-radius: var(--border-radius-4);
+  background: hsla(var(--color-neutral), var(--alpha-background-light));
+  color: hsl(var(--color-neutral));
+  font-size: 1.1em;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.gt-modal-batch-nav-btn:hover:not(:disabled) {
+  background: hsla(var(--color-neutral), var(--alpha-background-medium));
+}
+
+.gt-modal-batch-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .gt-modal-title {
   font-family: var(--font-family);
   font-size: var(--font-size-body);

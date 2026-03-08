@@ -19,6 +19,11 @@ const TABS: Tab[] = ['headers', 'request', 'response']
 
 export function RequestModal({ request, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('headers')
+  const [selectedOpIndex, setSelectedOpIndex] = useState(0)
+
+  useEffect(() => {
+    setSelectedOpIndex(0)
+  }, [request])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -39,7 +44,40 @@ export function RequestModal({ request, onClose }: Props) {
       >
         <div className="gt-modal-header">
           <div className="gt-modal-header-top">
-            <span className="gt-modal-title">{request.operationName}</span>
+            {request.batchedOperations ? (
+              <div className="gt-modal-batch-nav">
+                <select
+                  className="gt-modal-title-select"
+                  value={selectedOpIndex}
+                  onChange={(e) => setSelectedOpIndex(Number(e.target.value))}
+                  aria-label="Select operation"
+                >
+                  {request.batchedOperations.map((op, i) => (
+                    <option key={i} value={i}>
+                      {op.operationName}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="gt-modal-batch-nav-btn"
+                  onClick={() => setSelectedOpIndex((i) => i - 1)}
+                  disabled={selectedOpIndex === 0}
+                  aria-label="Previous operation"
+                >
+                  ‹
+                </button>
+                <button
+                  className="gt-modal-batch-nav-btn"
+                  onClick={() => setSelectedOpIndex((i) => i + 1)}
+                  disabled={selectedOpIndex === request.batchedOperations.length - 1}
+                  aria-label="Next operation"
+                >
+                  ›
+                </button>
+              </div>
+            ) : (
+              <span className="gt-modal-title">{request.operationName}</span>
+            )}
             <button className="gt-modal-close" onClick={onClose} aria-label="Close">
               ×
             </button>
@@ -77,8 +115,26 @@ export function RequestModal({ request, onClose }: Props) {
               <HeadersTable title="Response Headers" headers={request.responseHeaders} />
             </div>
           )}
-          {activeTab === 'request' && <RequestTab request={request} />}
-          {activeTab === 'response' && <ResponseTab request={request} />}
+          {(() => {
+            const selectedOp = request.batchedOperations?.[selectedOpIndex]
+            const requestForTabs: GraphQLRequest = selectedOp
+              ? {
+                  ...request,
+                  query: selectedOp.query,
+                  variables: selectedOp.variables,
+                  extensions: selectedOp.extensions,
+                  response: selectedOp.response,
+                  rawBody: undefined,
+                  batchedOperations: undefined,
+                }
+              : request
+            return (
+              <>
+                {activeTab === 'request' && <RequestTab request={requestForTabs} />}
+                {activeTab === 'response' && <ResponseTab request={requestForTabs} />}
+              </>
+            )
+          })()}
         </div>
       </div>
     </div>

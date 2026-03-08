@@ -300,4 +300,154 @@ describe('useGraphQLRequests', () => {
     rerender({ autoClear: true })
     expect(onNavigatedAddListener).toHaveBeenCalledOnce()
   })
+
+  it('onNavigated listener is not registered when autoClear is false', () => {
+    renderHook(() => useGraphQLRequests(false))
+    expect(onNavigatedAddListener).not.toHaveBeenCalled()
+  })
+
+  it('toggling autoClear from true to false removes the navigation listener', () => {
+    const { rerender } = renderHook(({ autoClear }) => useGraphQLRequests(autoClear), {
+      initialProps: { autoClear: true },
+    })
+    expect(onNavigatedAddListener).toHaveBeenCalledOnce()
+    const registeredFn = onNavigatedAddListener.mock.calls[0][0]
+    rerender({ autoClear: false })
+    expect(onNavigatedRemoveListener).toHaveBeenCalledWith(registeredFn)
+  })
+
+  it('stores rawBody from postData.text', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      fire(makeGraphQLEntry())
+    })
+    expect(result.current.requests[0].rawBody).toBe(
+      JSON.stringify({ query: 'query GetHero { hero { name } }' })
+    )
+  })
+
+  it('rawBody is undefined when there is no postData (GET request)', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      fire(
+        makeGraphQLEntry({
+          method: 'GET',
+          url: 'https://api.example.com/graphql?query=%7B%20hero%20%7D',
+          headers: [],
+          postData: undefined,
+        })
+      )
+    })
+    expect(result.current.requests[0].rawBody).toBeUndefined()
+  })
+
+  it('stores extensions when present in the request body', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      fire(
+        makeGraphQLEntry({
+          postData: {
+            text: JSON.stringify({
+              query: '{ hero }',
+              extensions: { persistedQuery: { version: 1 } },
+            }),
+          },
+        })
+      )
+    })
+    expect(result.current.requests[0].extensions).toBe(
+      '{\n  "persistedQuery": {\n    "version": 1\n  }\n}'
+    )
+  })
+
+  it('captures a GET-based GraphQL request', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      fire(
+        makeGraphQLEntry({
+          method: 'GET',
+          url: 'https://api.example.com/graphql?query=query%20GetHero%20%7B%20hero%20%7B%20name%20%7D%20%7D',
+          headers: [],
+          postData: undefined,
+        })
+      )
+    })
+    expect(result.current.requests).toHaveLength(1)
+    expect(result.current.requests[0]).toMatchObject({
+      method: 'GET',
+      operationName: 'GetHero',
+      operationType: 'query',
+      query: 'query GetHero { hero { name } }',
+    })
+  })
+
+  it('id counter continues incrementing after clear() — does not reset', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      fire(makeGraphQLEntry())
+      fire(makeGraphQLEntry())
+    })
+    act(() => {
+      result.current.clear()
+    })
+    await act(async () => {
+      fire(makeGraphQLEntry())
+    })
+    expect(result.current.requests[0].id).toBe('3')
+  })
+
+  it('sets batchedOperations on batch requests with parsed operations', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    const batchBody = JSON.stringify([
+      { query: 'query GetHero { hero { name } }' },
+      { query: 'mutation CreateUser { createUser { id } }' },
+    ])
+    const batchResponse = JSON.stringify([
+      { data: { hero: { name: 'Luke' } } },
+      { data: { createUser: { id: '1' } } },
+    ])
+    await act(async () => {
+      fire(makeGraphQLEntry({ postData: { text: batchBody } }, batchResponse))
+    })
+    const req = result.current.requests[0]
+    expect(req.operationType).toBe('batch')
+    expect(req.operationName).toBe('GetHero')
+    expect(req.batchedOperations).toHaveLength(2)
+    expect(req.batchedOperations![0]).toMatchObject({
+      operationName: 'GetHero',
+      operationType: 'query',
+      query: 'query GetHero { hero { name } }',
+    })
+    expect(req.batchedOperations![1]).toMatchObject({
+      operationName: 'CreateUser',
+      operationType: 'mutation',
+      query: 'mutation CreateUser { createUser { id } }',
+    })
+  })
+
+  it('batchedOperations includes individual responses from the batch response array', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    const batchBody = JSON.stringify([
+      { query: 'query GetHero { hero { name } }' },
+      { query: 'query GetVillain { villain { name } }' },
+    ])
+    const batchResponse = JSON.stringify([
+      { data: { hero: { name: 'Luke' } } },
+      { data: { villain: { name: 'Vader' } } },
+    ])
+    await act(async () => {
+      fire(makeGraphQLEntry({ postData: { text: batchBody } }, batchResponse))
+    })
+    const ops = result.current.requests[0].batchedOperations!
+    expect(ops[0].response).toBe(JSON.stringify({ data: { hero: { name: 'Luke' } } }, null, 2))
+    expect(ops[1].response).toBe(JSON.stringify({ data: { villain: { name: 'Vader' } } }, null, 2))
+  })
+
+  it('batchedOperations is undefined for non-batch requests', async () => {
+    const { result } = renderHook(() => useGraphQLRequests(false))
+    await act(async () => {
+      fire(makeGraphQLEntry())
+    })
+    expect(result.current.requests[0].batchedOperations).toBeUndefined()
+  })
 })

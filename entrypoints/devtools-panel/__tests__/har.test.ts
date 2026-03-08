@@ -4,6 +4,7 @@ import {
   isGraphQLEntry,
   extractOperationInfo,
   extractQueryAndVariables,
+  extractBatchedOperations,
   buildCurlCommand,
 } from '../har'
 import type { HAREntry, GraphQLRequest } from '../har'
@@ -783,5 +784,221 @@ describe('buildCurlCommand', () => {
   it('escapes single quotes in the URL', () => {
     const cmd = buildCurlCommand(makeRequest({ url: "https://example.com/it's", headers: [] }))
     expect(cmd).toContain("curl -X POST 'https://example.com/it'\\''s'")
+  })
+
+  it('POST with rawBody → uses rawBody directly as --data-raw', () => {
+    const rawBody = '[{"query":"{ hero }"},{"query":"{ villain }"}]'
+    const cmd = buildCurlCommand(
+      makeRequest({
+        rawBody,
+        headers: [{ name: 'content-type', value: 'application/json' }],
+      })
+    )
+    expect(cmd).toContain(`--data-raw '${rawBody}'`)
+    expect(cmd).not.toContain('"query":"query GetHero')
+  })
+})
+
+describe('isGraphQLEntry — batch', () => {
+  it('POST with JSON array where all items have query → true', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([
+            { query: 'query GetHero { hero { name } }' },
+            { query: 'query GetVillain { villain { name } }' },
+          ]),
+        },
+      },
+    })
+    expect(isGraphQLEntry(entry)).toBe(true)
+  })
+
+  it('POST with empty array → false', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: '[]' },
+      },
+    })
+    expect(isGraphQLEntry(entry)).toBe(false)
+  })
+
+  it('POST with array where some items missing query → false', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([
+            { query: 'query GetHero { hero { name } }' },
+            { operationName: 'NoQuery' },
+          ]),
+        },
+      },
+    })
+    expect(isGraphQLEntry(entry)).toBe(false)
+  })
+})
+
+describe('extractOperationInfo — batch', () => {
+  it('batch POST → returns first operation name and batch type', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([
+            { query: 'query GetHero { hero { name } }' },
+            { query: 'mutation CreateUser { createUser { id } }' },
+          ]),
+        },
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'GetHero',
+      operationType: 'batch',
+    })
+  })
+
+  it('batch POST with explicit operationName on first item → uses it', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([
+            { operationName: 'MyHero', query: 'query GetHero { hero { name } }' },
+            { query: 'mutation CreateUser { createUser { id } }' },
+          ]),
+        },
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'MyHero',
+      operationType: 'batch',
+    })
+  })
+
+  it('batch POST with anonymous first operation → uses parsed name', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([
+            { query: '{ hero { name } }' },
+            { query: 'query GetVillain { villain { name } }' },
+          ]),
+        },
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'Query',
+      operationType: 'batch',
+    })
+  })
+})
+
+describe('extractBatchedOperations', () => {
+  function makeBatchEntry(
+    items: Array<{ query: string; operationName?: string; variables?: object }>,
+    overrides: Partial<HAREntry> = {}
+  ): HAREntry {
+    return makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify(items) },
+      },
+      ...overrides,
+    })
+  }
+
+  it('parses each operation name and query from the batch array', () => {
+    const entry = makeBatchEntry([
+      { query: 'query GetHero { hero { name } }' },
+      { query: 'mutation CreateUser { createUser { id } }' },
+    ])
+    const ops = extractBatchedOperations(entry, undefined)
+    expect(ops).toHaveLength(2)
+    expect(ops[0]).toMatchObject({
+      operationName: 'GetHero',
+      operationType: 'query',
+      query: 'query GetHero { hero { name } }',
+    })
+    expect(ops[1]).toMatchObject({
+      operationName: 'CreateUser',
+      operationType: 'mutation',
+      query: 'mutation CreateUser { createUser { id } }',
+    })
+  })
+
+  it('uses explicit operationName when present on each item', () => {
+    const entry = makeBatchEntry([
+      { operationName: 'MyHero', query: 'query GetHero { hero { name } }' },
+    ])
+    const ops = extractBatchedOperations(entry, undefined)
+    expect(ops[0].operationName).toBe('MyHero')
+  })
+
+  it('distributes individual responses from the batch response array', () => {
+    const entry = makeBatchEntry([
+      { query: 'query GetHero { hero { name } }' },
+      { query: 'query GetVillain { villain { name } }' },
+    ])
+    const responseText = JSON.stringify([
+      { data: { hero: { name: 'Luke' } } },
+      { data: { villain: { name: 'Vader' } } },
+    ])
+    const ops = extractBatchedOperations(entry, responseText)
+    expect(ops[0].response).toBe(JSON.stringify({ data: { hero: { name: 'Luke' } } }, null, 2))
+    expect(ops[1].response).toBe(JSON.stringify({ data: { villain: { name: 'Vader' } } }, null, 2))
+  })
+
+  it('leaves response undefined when responseText is not an array', () => {
+    const entry = makeBatchEntry([{ query: '{ hero { name } }' }])
+    const ops = extractBatchedOperations(entry, '{"data":{"hero":{"name":"Luke"}}}')
+    expect(ops[0].response).toBeUndefined()
+  })
+
+  it('leaves response undefined when responseText is undefined', () => {
+    const entry = makeBatchEntry([{ query: '{ hero { name } }' }])
+    const ops = extractBatchedOperations(entry, undefined)
+    expect(ops[0].response).toBeUndefined()
+  })
+
+  it('parses variables from each item', () => {
+    const entry = makeBatchEntry([
+      { query: 'query GetHero($id: ID!) { hero(id: $id) { name } }', variables: { id: '1' } },
+    ])
+    const ops = extractBatchedOperations(entry, undefined)
+    expect(ops[0].variables).toBe('{\n  "id": "1"\n}')
+  })
+
+  it('returns empty array when postData is missing', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+      },
+    })
+    expect(extractBatchedOperations(entry, undefined)).toEqual([])
+  })
+
+  it('returns empty array when body is not an array', () => {
+    const entry = makeEntry()
+    expect(extractBatchedOperations(entry, undefined)).toEqual([])
   })
 })

@@ -66,7 +66,12 @@ export function ContextMenu({ x, y, request, onClose }: Props) {
       <button
         className="gt-context-menu-item"
         role="menuitem"
-        onClick={() => copyAndClose(request.query, onClose)}
+        onClick={() =>
+          copyAndClose(
+            request.operationType === 'batch' ? (request.rawBody ?? '') : request.query,
+            onClose
+          )
+        }
       >
         Copy Query
       </button>

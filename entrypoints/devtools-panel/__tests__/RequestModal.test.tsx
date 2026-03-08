@@ -5,10 +5,14 @@ import '@testing-library/jest-dom/vitest'
 
 vi.mock('../RequestModal.css', () => ({}))
 vi.mock('../RequestTab', () => ({
-  RequestTab: () => <div data-testid="request-tab-mock" />,
+  RequestTab: ({ request }: { request: { query: string } }) => (
+    <div data-testid="request-tab-mock" data-query={request.query} />
+  ),
 }))
 vi.mock('../ResponseTab', () => ({
-  ResponseTab: () => <div data-testid="response-tab-mock" />,
+  ResponseTab: ({ request }: { request: { response?: string } }) => (
+    <div data-testid="response-tab-mock" data-response={request.response} />
+  ),
 }))
 
 import type { GraphQLRequest } from '../har'
@@ -184,6 +188,135 @@ describe('RequestModal', () => {
     it('ResponseTab is not in DOM when a different tab is active', () => {
       renderModal()
       expect(screen.queryByTestId('response-tab-mock')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Batch operation dropdown', () => {
+    function makeBatchRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
+      return makeRequest({
+        operationType: 'batch',
+        operationName: 'GetHero',
+        batchedOperations: [
+          {
+            operationName: 'GetHero',
+            operationType: 'query',
+            query: 'query GetHero { hero { name } }',
+            response: '{"data":{"hero":{"name":"Luke"}}}',
+          },
+          {
+            operationName: 'GetVillain',
+            operationType: 'query',
+            query: 'query GetVillain { villain { name } }',
+            response: '{"data":{"villain":{"name":"Vader"}}}',
+          },
+        ],
+        ...overrides,
+      })
+    }
+
+    it('does not render a dropdown for non-batch requests', () => {
+      renderModal()
+      expect(screen.queryByRole('combobox', { name: 'Select operation' })).not.toBeInTheDocument()
+    })
+
+    it('renders a dropdown for batch requests with all operation names as options', () => {
+      renderModal(makeBatchRequest())
+      const select = screen.getByRole('combobox', { name: 'Select operation' })
+      expect(select).toBeInTheDocument()
+      const options = Array.from(select.querySelectorAll('option')).map((o) => o.textContent)
+      expect(options).toEqual(['GetHero', 'GetVillain'])
+    })
+
+    it('default selected option is the first operation', () => {
+      renderModal(makeBatchRequest())
+      const select = screen.getByRole('combobox', { name: 'Select operation' }) as HTMLSelectElement
+      expect(select.value).toBe('0')
+    })
+
+    it('changing dropdown selection updates the Request tab query', () => {
+      renderModal(makeBatchRequest())
+      fireEvent.click(screen.getByRole('tab', { name: 'Request' }))
+      expect(screen.getByTestId('request-tab-mock')).toHaveAttribute(
+        'data-query',
+        'query GetHero { hero { name } }'
+      )
+      fireEvent.change(screen.getByRole('combobox', { name: 'Select operation' }), {
+        target: { value: '1' },
+      })
+      expect(screen.getByTestId('request-tab-mock')).toHaveAttribute(
+        'data-query',
+        'query GetVillain { villain { name } }'
+      )
+    })
+
+    it('changing dropdown selection updates the Response tab content', () => {
+      renderModal(makeBatchRequest())
+      fireEvent.click(screen.getByRole('tab', { name: 'Response' }))
+      expect(screen.getByTestId('response-tab-mock')).toHaveAttribute(
+        'data-response',
+        '{"data":{"hero":{"name":"Luke"}}}'
+      )
+      fireEvent.change(screen.getByRole('combobox', { name: 'Select operation' }), {
+        target: { value: '1' },
+      })
+      expect(screen.getByTestId('response-tab-mock')).toHaveAttribute(
+        'data-response',
+        '{"data":{"villain":{"name":"Vader"}}}'
+      )
+    })
+
+    it('Headers tab content is unaffected by dropdown selection', () => {
+      renderModal(makeBatchRequest())
+      expect(screen.getByText('Request Headers')).toBeInTheDocument()
+      fireEvent.change(screen.getByRole('combobox', { name: 'Select operation' }), {
+        target: { value: '1' },
+      })
+      expect(screen.getByText('Request Headers')).toBeInTheDocument()
+    })
+
+    it('Previous button is disabled when first operation is selected', () => {
+      renderModal(makeBatchRequest())
+      expect(screen.getByRole('button', { name: 'Previous operation' })).toBeDisabled()
+    })
+
+    it('Next button is disabled when last operation is selected', () => {
+      renderModal(makeBatchRequest())
+      fireEvent.change(screen.getByRole('combobox', { name: 'Select operation' }), {
+        target: { value: '1' },
+      })
+      expect(screen.getByRole('button', { name: 'Next operation' })).toBeDisabled()
+    })
+
+    it('Next button advances to the next operation', () => {
+      renderModal(makeBatchRequest())
+      fireEvent.click(screen.getByRole('button', { name: 'Next operation' }))
+      const select = screen.getByRole('combobox', { name: 'Select operation' }) as HTMLSelectElement
+      expect(select.value).toBe('1')
+    })
+
+    it('Previous button goes back to the previous operation', () => {
+      renderModal(makeBatchRequest())
+      fireEvent.change(screen.getByRole('combobox', { name: 'Select operation' }), {
+        target: { value: '1' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Previous operation' }))
+      const select = screen.getByRole('combobox', { name: 'Select operation' }) as HTMLSelectElement
+      expect(select.value).toBe('0')
+    })
+
+    it('dropdown resets to first operation when a new request is opened', () => {
+      const { rerender } = renderModal(makeBatchRequest())
+      fireEvent.change(screen.getByRole('combobox', { name: 'Select operation' }), {
+        target: { value: '1' },
+      })
+      const select = screen.getByRole('combobox', { name: 'Select operation' }) as HTMLSelectElement
+      expect(select.value).toBe('1')
+
+      const newRequest = makeBatchRequest({ id: '2' })
+      rerender(<RequestModal request={newRequest} onClose={vi.fn()} />)
+      expect(
+        (screen.getByRole('combobox', { name: 'Select operation' }) as HTMLSelectElement).value
+      ).toBe('0')
     })
   })
 })

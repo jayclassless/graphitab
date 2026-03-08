@@ -71,6 +71,60 @@ describe('RequestRow', () => {
     expect(screen.getByText('Q')).toHaveClass('gt-op-badge--unknown')
   })
 
+  it('shows B badge for batch operations', () => {
+    renderRow(makeRequest({ operationType: 'batch' }))
+    expect(screen.getByText('B')).toHaveClass('gt-op-badge--batch')
+  })
+
+  it('shows +N annotation when batch has multiple operations', () => {
+    renderRow(
+      makeRequest({
+        operationType: 'batch',
+        operationName: 'GetHero',
+        batchedOperations: [
+          {
+            operationName: 'GetHero',
+            operationType: 'query',
+            query: 'query GetHero { hero { name } }',
+          },
+          {
+            operationName: 'GetVillain',
+            operationType: 'query',
+            query: 'query GetVillain { villain { name } }',
+          },
+          {
+            operationName: 'GetSidekick',
+            operationType: 'query',
+            query: 'query GetSidekick { sidekick { name } }',
+          },
+        ],
+      })
+    )
+    expect(screen.getByText('+2')).toBeInTheDocument()
+  })
+
+  it('does not show +N annotation when batch has only one operation', () => {
+    const { container } = renderRow(
+      makeRequest({
+        operationType: 'batch',
+        operationName: 'GetHero',
+        batchedOperations: [
+          {
+            operationName: 'GetHero',
+            operationType: 'query',
+            query: 'query GetHero { hero { name } }',
+          },
+        ],
+      })
+    )
+    expect(container.querySelector('.gt-batch-extra-count')).not.toBeInTheDocument()
+  })
+
+  it('does not show +N annotation for non-batch operations', () => {
+    const { container } = renderRow(makeRequest({ operationType: 'query' }))
+    expect(container.querySelector('.gt-batch-extra-count')).not.toBeInTheDocument()
+  })
+
   it('shows success dot for 2xx status', () => {
     const { container } = renderRow(makeRequest({ status: 200 }))
     expect(container.querySelector('.gt-status-dot--success')).toBeInTheDocument()

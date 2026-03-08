@@ -38,9 +38,14 @@ export function RequestRow({
             ? 'M'
             : req.operationType === 'subscription'
               ? 'S'
-              : 'Q'}
+              : req.operationType === 'batch'
+                ? 'B'
+                : 'Q'}
         </span>
         {req.operationName}
+        {req.batchedOperations && req.batchedOperations.length > 1 && (
+          <span className="gt-batch-extra-count">+{req.batchedOperations.length - 1}</span>
+        )}
       </div>
       <div>
         <span

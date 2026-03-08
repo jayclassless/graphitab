@@ -133,7 +133,7 @@ describe('DevTools Panel App', () => {
   })
 
   describe('Type filter', () => {
-    it('renders Query and Mutation filter buttons, both initially active', () => {
+    it('renders Query, Mutation, and Batch filter buttons, all initially active', () => {
       mockHook([])
       render(<App />)
       expect(screen.getByRole('button', { name: 'Query' })).toHaveAttribute('aria-pressed', 'true')
@@ -141,6 +141,7 @@ describe('DevTools Panel App', () => {
         'aria-pressed',
         'true'
       )
+      expect(screen.getByRole('button', { name: 'Batch' })).toHaveAttribute('aria-pressed', 'true')
       expect(screen.queryByRole('button', { name: 'Subscription' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Unknown' })).not.toBeInTheDocument()
     })
@@ -209,6 +210,52 @@ describe('DevTools Panel App', () => {
       expect(screen.getByText('OnUpdate')).toBeInTheDocument()
       expect(screen.getByText('Mystery')).toBeInTheDocument()
       expect(screen.queryByText('GetHero')).not.toBeInTheDocument()
+    })
+
+    it('deactivating Batch hides batch rows but keeps query/mutation rows', async () => {
+      mockHook([
+        makeRequest({ id: '1', operationType: 'query', operationName: 'GetHero' }),
+        makeRequest({
+          id: '2',
+          operationType: 'batch',
+          operationName: 'GetHero',
+          batchedOperations: [
+            {
+              operationName: 'GetHero',
+              operationType: 'query',
+              query: 'query GetHero { hero { name } }',
+            },
+            {
+              operationName: 'GetVillain',
+              operationType: 'query',
+              query: 'query GetVillain { villain { name } }',
+            },
+          ],
+        }),
+      ])
+      render(<App />)
+      await userEvent.click(screen.getByRole('button', { name: 'Batch' }))
+      expect(screen.getByRole('button', { name: 'Batch' })).toHaveAttribute('aria-pressed', 'false')
+      expect(screen.getAllByText('GetHero')).toHaveLength(1)
+    })
+
+    it('re-clicking a deactivated Batch filter reactivates it and shows batch rows', async () => {
+      mockHook([
+        makeRequest({
+          id: '1',
+          operationType: 'batch',
+          operationName: 'BatchedOp',
+          batchedOperations: [
+            { operationName: 'BatchedOp', operationType: 'query', query: '{ hero }' },
+          ],
+        }),
+      ])
+      render(<App />)
+      const batchBtn = screen.getByRole('button', { name: 'Batch' })
+      await userEvent.click(batchBtn)
+      expect(screen.queryByText('BatchedOp')).not.toBeInTheDocument()
+      await userEvent.click(batchBtn)
+      expect(screen.getByText('BatchedOp')).toBeInTheDocument()
     })
   })
 

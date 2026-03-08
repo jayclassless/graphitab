@@ -181,4 +181,64 @@ describe('ContextMenu', () => {
     const prevented = fireEvent.contextMenu(document.body)
     expect(prevented).toBe(false)
   })
+
+  describe('batch requests', () => {
+    function makeBatchRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
+      return makeRequest({
+        operationType: 'batch',
+        operationName: 'GetHero',
+        query: '',
+        variables: undefined,
+        rawBody:
+          '[{"query":"query GetHero { hero { name } }"},{"query":"query GetVillain { villain { name } }"}]',
+        response: '[{"data":{"hero":{"name":"Luke"}}},{"data":{"villain":{"name":"Vader"}}}]',
+        batchedOperations: [
+          {
+            operationName: 'GetHero',
+            operationType: 'query',
+            query: 'query GetHero { hero { name } }',
+          },
+          {
+            operationName: 'GetVillain',
+            operationType: 'query',
+            query: 'query GetVillain { villain { name } }',
+          },
+        ],
+        ...overrides,
+      })
+    }
+
+    it('hides Copy Variables for batch requests', () => {
+      renderMenu(makeBatchRequest())
+      expect(screen.queryByText('Copy Variables')).not.toBeInTheDocument()
+    })
+
+    it('Copy Query copies rawBody for batch requests', async () => {
+      const onClose = vi.fn()
+      const rawBody =
+        '[{"query":"query GetHero { hero { name } }"},{"query":"query GetVillain { villain { name } }"}]'
+      renderMenu(makeBatchRequest({ rawBody }), onClose)
+      fireEvent.click(screen.getByText('Copy Query'))
+      expect(writeText).toHaveBeenCalledWith(rawBody)
+      await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce())
+    })
+
+    it('Copy Response copies the full batch response for batch requests', async () => {
+      const onClose = vi.fn()
+      renderMenu(makeBatchRequest(), onClose)
+      fireEvent.click(screen.getByText('Copy Response'))
+      expect(writeText).toHaveBeenCalledWith(
+        '[\n  {\n    "data": {\n      "hero": {\n        "name": "Luke"\n      }\n    }\n  },\n  {\n    "data": {\n      "villain": {\n        "name": "Vader"\n      }\n    }\n  }\n]'
+      )
+      await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce())
+    })
+
+    it('Copy Query copies empty string when rawBody is undefined', async () => {
+      const onClose = vi.fn()
+      renderMenu(makeBatchRequest({ rawBody: undefined }), onClose)
+      fireEvent.click(screen.getByText('Copy Query'))
+      expect(writeText).toHaveBeenCalledWith('')
+      await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce())
+    })
+  })
 })

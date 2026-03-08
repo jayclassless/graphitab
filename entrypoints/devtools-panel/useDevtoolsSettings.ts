@@ -4,7 +4,7 @@ import { storage } from '#imports'
 
 import type { OperationType } from './har'
 
-export const FILTER_TYPES: OperationType[] = ['query', 'mutation']
+export const FILTER_TYPES: OperationType[] = ['query', 'mutation', 'batch']
 export const DEFAULT_COLUMN_WIDTHS = [200, 100, 100, 100]
 
 const preserveLogItem = storage.defineItem<boolean>('local:devtools.preserveLog', {

@@ -138,6 +138,17 @@ body {
   color: hsl(var(--color-neutral));
 }
 
+.gt-op-badge--batch {
+  background-color: #b8860b;
+}
+
+.gt-batch-extra-count {
+  margin-left: var(--px-4);
+  font-size: 0.85em;
+  color: hsla(var(--color-neutral), var(--alpha-tertiary));
+  flex-shrink: 0;
+}
+
 .gt-devtools-toolbar {
   display: flex;
   align-items: center;

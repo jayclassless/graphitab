@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { browser } from 'wxt/browser'
 
-import { isGraphQLEntry, extractOperationInfo, extractQueryAndVariables } from './har'
+import {
+  isGraphQLEntry,
+  extractOperationInfo,
+  extractQueryAndVariables,
+  extractBatchedOperations,
+} from './har'
 import type { HAREntry, GraphQLRequest } from './har'
 
 export function useGraphQLRequests(autoClear: boolean): {
@@ -31,6 +36,10 @@ export function useGraphQLRequests(autoClear: boolean): {
           }
         })
       })
+      const batchedOperations =
+        operationType === 'batch'
+          ? extractBatchedOperations(entry, responseText || undefined)
+          : undefined
       setRequests((prev) => [
         ...prev,
         {
@@ -49,6 +58,7 @@ export function useGraphQLRequests(autoClear: boolean): {
           rawBody: entry.request.postData?.text || undefined,
           response: responseText || undefined,
           responseHeaders: entry.response.headers,
+          batchedOperations,
         },
       ])
     }

@@ -16,7 +16,16 @@ export type HAREntry = {
   getContent(callback: (content: string, encoding: string) => void): void
 }
 
-export type OperationType = 'query' | 'mutation' | 'subscription' | 'unknown'
+export type OperationType = 'query' | 'mutation' | 'subscription' | 'unknown' | 'batch'
+
+export type BatchedOperation = {
+  operationName: string
+  operationType: Exclude<OperationType, 'batch'>
+  query: string
+  variables?: string
+  extensions?: string
+  response?: string
+}
 
 export type GraphQLRequest = {
   id: string
@@ -34,6 +43,7 @@ export type GraphQLRequest = {
   rawBody?: string
   response?: string
   responseHeaders?: Array<{ name: string; value: string }>
+  batchedOperations?: BatchedOperation[]
 }
 
 export function isGraphQLEntry(entry: HAREntry): boolean {
@@ -45,7 +55,14 @@ export function isGraphQLEntry(entry: HAREntry): boolean {
     if (!postData?.text) return false
     try {
       const body = JSON.parse(postData.text)
-      return typeof body.query === 'string'
+      if (typeof body.query === 'string') return true
+      if (
+        Array.isArray(body) &&
+        body.length > 0 &&
+        body.every((item) => typeof item?.query === 'string')
+      )
+        return true
+      return false
     } catch {
       return false
     }
@@ -141,6 +158,15 @@ export function extractOperationInfo(entry: HAREntry): OperationInfo {
         }
         return info
       }
+      if (Array.isArray(body) && body.length > 0) {
+        const first = body[0]
+        const info = parseOperation(typeof first?.query === 'string' ? first.query : '')
+        const opName =
+          typeof first?.operationName === 'string' && first.operationName.trim()
+            ? first.operationName.trim()
+            : info.operationName
+        return { operationName: opName, operationType: 'batch' }
+      }
     } catch {
       // fall through
     }
@@ -164,6 +190,56 @@ export function extractOperationInfo(entry: HAREntry): OperationInfo {
   }
 
   return { operationName: 'Anonymous', operationType: 'unknown' }
+}
+
+export function extractBatchedOperations(
+  entry: HAREntry,
+  responseText: string | undefined
+): BatchedOperation[] {
+  const { postData } = entry.request
+  if (!postData?.text) return []
+  try {
+    const body = JSON.parse(postData.text)
+    if (!Array.isArray(body)) return []
+
+    let responseArray: unknown[] | undefined
+    if (responseText) {
+      try {
+        const parsed = JSON.parse(responseText)
+        if (Array.isArray(parsed)) responseArray = parsed
+      } catch {
+        // ignore malformed response
+      }
+    }
+
+    return body.map((item, i) => {
+      const info = parseOperation(typeof item?.query === 'string' ? item.query : '')
+      const opName =
+        typeof item?.operationName === 'string' && item.operationName.trim()
+          ? item.operationName.trim()
+          : info.operationName
+      const variables =
+        item?.variables !== null && typeof item?.variables === 'object'
+          ? JSON.stringify(item.variables, null, 2)
+          : undefined
+      const extensions =
+        item?.extensions !== null && typeof item?.extensions === 'object'
+          ? JSON.stringify(item.extensions, null, 2)
+          : undefined
+      const response =
+        responseArray?.[i] !== undefined ? JSON.stringify(responseArray[i], null, 2) : undefined
+      return {
+        operationName: opName,
+        operationType: info.operationType as Exclude<OperationType, 'batch'>,
+        query: typeof item?.query === 'string' ? item.query : '',
+        variables,
+        extensions,
+        response,
+      }
+    })
+  } catch {
+    return []
+  }
 }
 
 function parseOperation(query: string): OperationInfo {
@@ -203,22 +279,26 @@ export function buildCurlCommand(request: GraphQLRequest): string {
   }
 
   if (request.method.toUpperCase() === 'POST') {
-    const body: Record<string, unknown> = { query: request.query }
-    if (request.variables) {
-      try {
-        body.variables = JSON.parse(request.variables)
-      } catch {
-        // variables couldn't be parsed; omit from body
+    if (request.rawBody) {
+      parts.push(`--data-raw ${shellEscape(request.rawBody)}`)
+    } else {
+      const body: Record<string, unknown> = { query: request.query }
+      if (request.variables) {
+        try {
+          body.variables = JSON.parse(request.variables)
+        } catch {
+          // variables couldn't be parsed; omit from body
+        }
       }
-    }
-    if (request.extensions) {
-      try {
-        body.extensions = JSON.parse(request.extensions)
-      } catch {
-        // extensions couldn't be parsed; omit from body
+      if (request.extensions) {
+        try {
+          body.extensions = JSON.parse(request.extensions)
+        } catch {
+          // extensions couldn't be parsed; omit from body
+        }
       }
+      parts.push(`--data-raw ${shellEscape(JSON.stringify(body))}`)
     }
-    parts.push(`--data-raw ${shellEscape(JSON.stringify(body))}`)
   }
 
   return parts.join(' ')

@@ -50,7 +50,7 @@ describe('useDevtoolsSettings', () => {
     })
     expect(result.current.activeTypes.has('query')).toBe(false)
     const stored = await fakeBrowser.storage.local.get('devtools.activeTypes')
-    expect(stored['devtools.activeTypes']).toEqual(['mutation'])
+    expect(stored['devtools.activeTypes']).toEqual(['mutation', 'batch'])
   })
 
   it('toggleType reactivates a type when toggled again', async () => {
