@@ -27,16 +27,23 @@
     "test": "pnpm run compile && vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "pnpm run build && playwright test",
+    "fullcheck": "pnpm run compile && pnpm run lint && pnpm run format && pnpm run test:coverage",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
     "@graphiql/plugin-explorer": "^5.1.1",
     "@graphiql/react": "^0.37.3",
     "@graphiql/toolkit": "^0.11.3",
+    "@microlink/react-json-view": "^1.31.1",
+    "filesize": "^11.0.13",
     "graphiql": "^5.2.2",
+    "graphql": "^16.13.1",
     "graphql-ws": "^6.0.7",
+    "highlight.js": "^11.11.1",
+    "pretty-ms": "^9.3.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-window": "^2.2.7",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
@@ -44,6 +51,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/chrome": "^0.1.37",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^4.0.18",
