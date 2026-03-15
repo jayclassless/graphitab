@@ -1,4 +1,9 @@
-import ReactJsonView from '@microlink/react-json-view'
+import _ReactJsonView from '@microlink/react-json-view'
+import type { ReactJsonViewProps } from '@microlink/react-json-view'
+import type { ComponentType } from 'react'
+
+const ReactJsonView = ((_ReactJsonView as any).default ??
+  _ReactJsonView) as ComponentType<ReactJsonViewProps>
 import { parse, print } from 'graphql'
 import hljs from 'highlight.js/lib/core'
 import graphql from 'highlight.js/lib/languages/graphql'

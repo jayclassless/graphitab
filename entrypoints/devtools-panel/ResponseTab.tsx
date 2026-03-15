@@ -1,4 +1,9 @@
-import ReactJsonView from '@microlink/react-json-view'
+import _ReactJsonView from '@microlink/react-json-view'
+import type { ReactJsonViewProps } from '@microlink/react-json-view'
+import type { ComponentType } from 'react'
+
+const ReactJsonView = ((_ReactJsonView as any).default ??
+  _ReactJsonView) as ComponentType<ReactJsonViewProps>
 import { useMemo, useState } from 'react'
 
 import './ResponseTab.css'

@@ -2,6 +2,11 @@ import { defineConfig } from 'wxt'
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  vite: () => ({
+    optimizeDeps: {
+      include: ['@microlink/react-json-view'],
+    },
+  }),
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   manifestVersion: 3,
   manifest: {

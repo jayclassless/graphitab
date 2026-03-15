@@ -34,7 +34,7 @@
     "@graphiql/plugin-explorer": "^5.1.1",
     "@graphiql/react": "^0.37.3",
     "@graphiql/toolkit": "^0.11.3",
-    "@microlink/react-json-view": "^1.31.1",
+    "@microlink/react-json-view": "^1.31.8",
     "filesize": "^11.0.13",
     "graphiql": "^5.2.2",
     "graphql": "^16.13.1",
@@ -54,17 +54,17 @@
     "@types/chrome": "^0.1.37",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.0",
     "@wxt-dev/auto-icons": "^1.1.1",
-    "@wxt-dev/module-react": "^1.2.1",
-    "esbuild": "^0.27.3",
+    "@wxt-dev/module-react": "^1.2.2",
+    "esbuild": "^0.27.4",
     "jsdom": "^28.1.0",
-    "oxfmt": "^0.36.0",
-    "oxlint": "^1.51.0",
+    "oxfmt": "^0.40.0",
+    "oxlint": "^1.55.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18",
+    "vitest": "^4.1.0",
     "vitest-localstorage-mock": "^0.1.2",
-    "wxt": "^0.20.18"
+    "wxt": "^0.20.19"
   },
   "packageManager": "pnpm@10.28.2"
 }
