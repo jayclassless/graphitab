@@ -13,6 +13,7 @@ export default defineConfig({
     name: 'GraphiTab',
     homepage_url: 'https://github.com/jayclassless/graphitab',
     permissions: ['storage'],
+    host_permissions: ['<all_urls>'],
     content_security_policy: {
       extension_pages: "script-src 'self'; object-src 'self';",
     },
