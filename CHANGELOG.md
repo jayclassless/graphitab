@@ -1,6 +1,6 @@
 # GraphiTab Change Log
 
-## 0.2.0 (UNRELEASED)
+## 0.2.0 (2026-03-22)
 
 - Added a DevTools panel for capturing and examining GraphQL requests.
 - Added ability to open saved queries in a new GraphiQL tab instead of
