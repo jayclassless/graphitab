@@ -12,7 +12,6 @@ This extension also includes a Developer Tools panel that monitors GraphQL netwo
 
 ![Screenshot](docs/graphitab_screenshot4.png)
 
-
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) v24.13.0
