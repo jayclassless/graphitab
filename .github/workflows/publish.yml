@@ -7,7 +7,21 @@ on:
   workflow_dispatch:
 
 jobs:
+  check:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for checks to succeed
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.ref }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          running-workflow-name: check
+          allowed-conclusions: success
+
   submit:
+    needs: [check]
+    if: ${{ !cancelled() && (needs.check.result == 'success' || needs.check.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
