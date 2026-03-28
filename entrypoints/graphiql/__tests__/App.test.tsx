@@ -142,11 +142,14 @@ describe('GraphiQL App', () => {
     mockGetProfile.mockResolvedValue(mockProfile)
     render(<App />)
     await waitFor(() => {
-      expect(mockCreateFetcher).toHaveBeenCalledWith({
-        url: 'https://test.com/graphql',
-        headers: undefined,
-        subscriptionUrl: 'wss://test.com/graphql',
-      })
+      expect(mockCreateFetcher).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'https://test.com/graphql',
+          headers: undefined,
+          subscriptionUrl: 'wss://test.com/graphql',
+          fetch: expect.any(Function),
+        })
+      )
     })
   })
 
@@ -159,11 +162,14 @@ describe('GraphiQL App', () => {
     mockGetProfile.mockResolvedValue(profileWithHeaders)
     render(<App />)
     await waitFor(() => {
-      expect(mockCreateFetcher).toHaveBeenCalledWith({
-        url: 'https://test.com/graphql',
-        headers: { Authorization: 'Bearer token123' },
-        subscriptionUrl: 'wss://test.com/graphql',
-      })
+      expect(mockCreateFetcher).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'https://test.com/graphql',
+          headers: { Authorization: 'Bearer token123' },
+          subscriptionUrl: 'wss://test.com/graphql',
+          fetch: expect.any(Function),
+        })
+      )
     })
   })
 
@@ -246,11 +252,14 @@ describe('GraphiQL App', () => {
     await waitFor(() => {
       expect(document.title).toBe('Updated API - GraphiTab')
     })
-    expect(mockCreateFetcher).toHaveBeenCalledWith({
-      url: 'https://updated.com/graphql',
-      headers: undefined,
-      subscriptionUrl: 'wss://updated.com/graphql',
-    })
+    expect(mockCreateFetcher).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://updated.com/graphql',
+        headers: undefined,
+        subscriptionUrl: 'wss://updated.com/graphql',
+        fetch: expect.any(Function),
+      })
+    )
   })
 
   it('skips update when profile data has not changed', async () => {

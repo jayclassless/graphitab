@@ -85,10 +85,21 @@ test.describe('Profile headers', () => {
       timeout: 15_000,
     })
 
-    // Intercept the GraphQL request and capture headers
-    const requestPromise = page.waitForRequest(
-      (req) => req.url() === 'https://countries.trevorblades.com/graphql' && req.method() === 'POST'
-    )
+    // Intercept the GraphQL request (made by the background service worker)
+    // and capture headers. context.route() is needed because page.waitForRequest
+    // cannot see requests made by service workers.
+    let capturedHeaders: Record<string, string> = {}
+    const headersCaptured = new Promise<void>((resolve) => {
+      page.context().route('https://countries.trevorblades.com/graphql', async (route) => {
+        capturedHeaders = route.request().headers()
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: { countries: [{ name: 'Test' }] } }),
+        })
+        resolve()
+      })
+    })
 
     // Type and execute a query
     const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')
@@ -98,8 +109,8 @@ test.describe('Profile headers', () => {
     await page.keyboard.type('{ countries { name } }', { delay: 10 })
     await page.locator('.graphiql-execute-button').click()
 
-    const request = await requestPromise
-    expect(request.headers()['x-test-header']).toBe('e2e-test-value')
+    await headersCaptured
+    expect(capturedHeaders['x-test-header']).toBe('e2e-test-value')
   })
 })
 

@@ -1,5 +1,9 @@
 # GraphiTab Change Log
 
+## 0.3.0 (UNRELEASED)
+
+- Reworked network requests to resolve CORS issues in Firefox.
+
 ## 0.2.0 (2026-03-22)
 
 - Added a DevTools panel for capturing and examining GraphQL requests.

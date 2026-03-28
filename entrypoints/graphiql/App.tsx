@@ -4,6 +4,7 @@ import { createGraphiQLFetcher } from '@graphiql/toolkit'
 import { GraphiQL } from 'graphiql'
 import { useState, useEffect, useMemo, useRef } from 'react'
 
+import { backgroundFetch } from '~/utils/background_fetch'
 import { get as getProfile, watch as watchProfiles, type Profile } from '~/utils/profiles'
 import { createSavedQueriesStorage, type SavedQuery } from '~/utils/queries_storage'
 import { createGraphiQLSettingsStorage } from '~/utils/settings_storage'
@@ -112,7 +113,12 @@ export default function App() {
   const fetcher = useMemo(() => {
     if (!profile) return null
     const subscriptionUrl = profile.url.replace(/^http/, 'ws')
-    return createGraphiQLFetcher({ url: profile.url, headers: profile.headers, subscriptionUrl })
+    return createGraphiQLFetcher({
+      url: profile.url,
+      headers: profile.headers,
+      subscriptionUrl,
+      fetch: backgroundFetch,
+    })
   }, [profile])
 
   const settingsStorage = useMemo(
