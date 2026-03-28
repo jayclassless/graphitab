@@ -1,0 +1,120 @@
+.gt-jwt-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gt-jwt-modal {
+  max-width: 700px;
+  width: 90vw;
+  max-height: 80vh;
+  background: hsla(var(--color-base), 1);
+  border: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  border-radius: var(--border-radius-4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gt-jwt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--px-8) var(--px-12);
+  border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  flex-shrink: 0;
+}
+
+.gt-jwt-modal-title {
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: hsl(var(--color-neutral));
+}
+
+.gt-jwt-modal-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--px-8) var(--px-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-16);
+}
+
+.gt-jwt-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--px-8);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: hsl(var(--color-neutral));
+  margin: 0 0 var(--px-6) 0;
+}
+
+.gt-jwt-claims-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+}
+
+.gt-jwt-claims-table th {
+  text-align: left;
+  padding: var(--px-6) var(--px-8);
+  font-weight: 600;
+  color: hsl(var(--color-neutral));
+  background-color: hsla(var(--color-neutral), var(--alpha-background-light));
+  border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+}
+
+.gt-jwt-claims-table td {
+  padding: var(--px-6) var(--px-8);
+  border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  vertical-align: top;
+  word-break: break-all;
+}
+
+.gt-jwt-claims-table td:first-child {
+  white-space: nowrap;
+  color: hsl(var(--color-neutral));
+  font-weight: 500;
+  width: 30%;
+}
+
+.gt-jwt-claim-name--known {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  text-decoration-color: hsla(var(--color-neutral), var(--alpha-tertiary));
+}
+
+.gt-jwt-error {
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  color: hsl(var(--color-error));
+  padding: var(--px-16);
+  text-align: center;
+}
+
+.gt-jwt-link {
+  background: none;
+  border: none;
+  color: hsl(var(--color-primary));
+  cursor: pointer;
+  text-decoration: underline;
+  text-align: left;
+  word-break: break-all;
+  font: inherit;
+  padding: 0;
+}
+
+.gt-jwt-link:hover {
+  opacity: 0.8;
+}

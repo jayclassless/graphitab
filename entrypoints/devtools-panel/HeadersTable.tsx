@@ -1,4 +1,8 @@
+import { useState } from 'react'
+
 import { CopyButton } from './CopyButton'
+import { extractJwt, isJwt } from './jwt'
+import { JwtModal } from './JwtModal'
 
 type Props = {
   title: string
@@ -6,6 +10,7 @@ type Props = {
 }
 
 export function HeadersTable({ title, headers }: Props) {
+  const [jwtToken, setJwtToken] = useState<string | null>(null)
   const visible = headers?.filter(({ name }) => !name.startsWith(':'))
   return (
     <section className="gt-headers-section">
@@ -31,7 +36,15 @@ export function HeadersTable({ title, headers }: Props) {
             {visible.map(({ name, value }, index) => (
               <tr key={index} className="gt-headers-row">
                 <td>{name}</td>
-                <td>{value}</td>
+                <td>
+                  {isJwt(value) ? (
+                    <button className="gt-jwt-link" onClick={() => setJwtToken(extractJwt(value))}>
+                      {value}
+                    </button>
+                  ) : (
+                    value
+                  )}
+                </td>
                 <td className="gt-headers-row-actions">
                   <CopyButton text={`${name}: ${value}`} title="Copy header" />
                 </td>
@@ -42,6 +55,7 @@ export function HeadersTable({ title, headers }: Props) {
       ) : (
         <p className="gt-empty">No headers</p>
       )}
+      {jwtToken && <JwtModal token={jwtToken} onClose={() => setJwtToken(null)} />}
     </section>
   )
 }

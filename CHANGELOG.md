@@ -6,6 +6,7 @@
 - Added support for Automatic Persisted Queries (APQ) in the DevTools panel.
 - Added a divider to the request list in the DevTools panel when a navigation
   occurs during Preserve Log mode.
+- Added an inspector in the DevTools panel for JWT tokens in headers.
 
 ## 0.2.0 (2026-03-22)
 

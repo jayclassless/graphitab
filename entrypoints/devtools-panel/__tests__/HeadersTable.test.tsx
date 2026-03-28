@@ -2,6 +2,23 @@ import { cleanup, render, screen, fireEvent } from '@testing-library/react'
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
+
+vi.mock('../jwt', () => ({
+  isJwt: vi.fn((value: string) => value.startsWith('eyJ')),
+  extractJwt: vi.fn((value: string) => {
+    const spaceIndex = value.indexOf(' ')
+    return spaceIndex === -1 ? value : value.slice(spaceIndex + 1)
+  }),
+}))
+
+vi.mock('../JwtModal', () => ({
+  JwtModal: vi.fn(({ token, onClose }: { token: string; onClose: () => void }) => (
+    <div data-testid="jwt-modal" data-token={token}>
+      <button onClick={onClose}>close-jwt-modal</button>
+    </div>
+  )),
+}))
+
 import { HeadersTable } from '../HeadersTable'
 
 describe('HeadersTable', () => {
@@ -192,6 +209,63 @@ describe('HeadersTable', () => {
       fireEvent.click(screen.getAllByTitle('Copy header')[1])
 
       expect(writeText).toHaveBeenCalledWith('authorization: Bearer token')
+    })
+  })
+
+  describe('JWT detection', () => {
+    const jwtValue = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0In0.signature'
+
+    it('renders a JWT value as a clickable button', () => {
+      render(
+        <HeadersTable
+          title="Request Headers"
+          headers={[{ name: 'authorization', value: jwtValue }]}
+        />
+      )
+      const button = screen.getByRole('button', { name: jwtValue })
+      expect(button).toBeInTheDocument()
+      expect(button).toHaveClass('gt-jwt-link')
+    })
+
+    it('renders a non-JWT value as plain text', () => {
+      render(
+        <HeadersTable
+          title="Request Headers"
+          headers={[{ name: 'content-type', value: 'application/json' }]}
+        />
+      )
+      expect(screen.queryByRole('button', { name: 'application/json' })).not.toBeInTheDocument()
+      expect(screen.getByText('application/json')).toBeInTheDocument()
+    })
+
+    it('opens the JwtModal when a JWT button is clicked', () => {
+      render(
+        <HeadersTable
+          title="Request Headers"
+          headers={[{ name: 'authorization', value: jwtValue }]}
+        />
+      )
+      expect(screen.queryByTestId('jwt-modal')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: jwtValue }))
+
+      expect(screen.getByTestId('jwt-modal')).toBeInTheDocument()
+      expect(screen.getByTestId('jwt-modal')).toHaveAttribute('data-token', jwtValue)
+    })
+
+    it('closes the JwtModal when onClose is called', () => {
+      render(
+        <HeadersTable
+          title="Request Headers"
+          headers={[{ name: 'authorization', value: jwtValue }]}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: jwtValue }))
+      expect(screen.getByTestId('jwt-modal')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByText('close-jwt-modal'))
+      expect(screen.queryByTestId('jwt-modal')).not.toBeInTheDocument()
     })
   })
 })

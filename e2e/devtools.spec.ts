@@ -97,6 +97,33 @@ const BATCH_ENTRY = {
   ]),
 }
 
+const JWT_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNzIjoiYXV0aC5leGFtcGxlLmNvbSIsImV4cCI6MTczNTY4OTYwMCwiaWF0IjoxNzM1NjAzMjAwLCJjdXN0b21fY2xhaW0iOiJ0ZXN0In0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+
+const JWT_ENTRY = {
+  request: {
+    method: 'POST',
+    url: 'https://example.com/graphql',
+    headers: [
+      { name: 'content-type', value: 'application/json' },
+      { name: 'authorization', value: `Bearer ${JWT_TOKEN}` },
+    ],
+    postData: {
+      text: JSON.stringify({
+        operationName: 'GetUser',
+        query: 'query GetUser { me { id name } }',
+      }),
+    },
+  },
+  response: {
+    status: 200,
+    content: { size: 128 },
+    headers: [{ name: 'content-type', value: 'application/json' }],
+  },
+  time: 100,
+  responseContent: JSON.stringify({ data: { me: { id: '1', name: 'John' } } }),
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -315,6 +342,96 @@ test.describe('DevTools Panel', () => {
 
       await page.getByLabel('Previous operation').click()
       await expect(page.locator('.gt-modal-title-select')).toHaveValue('0')
+    })
+  })
+
+  test.describe('JWT viewer', () => {
+    test.beforeEach(async ({ devtoolsPanel: page }) => {
+      await addRequest(page, JWT_ENTRY)
+      await page.locator('.gt-network-row').click()
+      await expect(page.locator('.gt-modal-backdrop')).toBeVisible()
+    })
+
+    test('JWT header value is rendered as a clickable link', async ({ devtoolsPanel: page }) => {
+      const jwtLink = page.locator('.gt-jwt-link')
+      await expect(jwtLink).toBeVisible()
+      await expect(jwtLink).toContainText('Bearer')
+    })
+
+    test('clicking the JWT link opens the JWT modal', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      await expect(page.locator('.gt-jwt-modal-backdrop')).toBeVisible()
+      await expect(page.locator('.gt-jwt-modal-title')).toContainText('JWT Claims')
+    })
+
+    test('JWT modal shows decoded header claims', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      const headerSection = page.locator('.gt-jwt-section').first()
+      await expect(headerSection.locator('.gt-jwt-section-title')).toContainText('Header')
+      await expect(headerSection).toContainText('alg')
+      await expect(headerSection).toContainText('HS256')
+      await expect(headerSection).toContainText('typ')
+      await expect(headerSection).toContainText('JWT')
+    })
+
+    test('JWT modal shows decoded payload claims', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      const payloadSection = page.locator('.gt-jwt-section').nth(1)
+      await expect(payloadSection.locator('.gt-jwt-section-title')).toContainText('Payload')
+      await expect(payloadSection).toContainText('sub')
+      await expect(payloadSection).toContainText('1234567890')
+      await expect(payloadSection).toContainText('name')
+      await expect(payloadSection).toContainText('John Doe')
+      await expect(payloadSection).toContainText('iss')
+      await expect(payloadSection).toContainText('auth.example.com')
+    })
+
+    test('known claims have a tooltip with description', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      const issCell = page.locator('.gt-jwt-claim-name--known', { hasText: 'iss' })
+      await expect(issCell).toHaveAttribute('title', 'Issuer')
+    })
+
+    test('unknown claims do not have a tooltip', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      const customCell = page.locator('.gt-jwt-claims-table td', { hasText: 'custom_claim' })
+      await expect(customCell).not.toHaveClass(/gt-jwt-claim-name--known/)
+      await expect(customCell).not.toHaveAttribute('title')
+    })
+
+    test('copy header JSON button is present', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      await expect(page.getByTitle('Copy header JSON')).toBeVisible()
+    })
+
+    test('copy payload JSON button is present', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      await expect(page.getByTitle('Copy payload JSON')).toBeVisible()
+    })
+
+    test('Escape closes only the JWT modal, not the request modal', async ({
+      devtoolsPanel: page,
+    }) => {
+      await page.locator('.gt-jwt-link').click()
+      await expect(page.locator('.gt-jwt-modal-backdrop')).toBeVisible()
+
+      await page.keyboard.press('Escape')
+      await expect(page.locator('.gt-jwt-modal-backdrop')).not.toBeVisible()
+      await expect(page.locator('.gt-modal-backdrop')).toBeVisible()
+    })
+
+    test('clicking the JWT modal backdrop closes it', async ({ devtoolsPanel: page }) => {
+      await page.locator('.gt-jwt-link').click()
+      await expect(page.locator('.gt-jwt-modal-backdrop')).toBeVisible()
+
+      await page.locator('.gt-jwt-modal-backdrop').click({ position: { x: 5, y: 5 } })
+      await expect(page.locator('.gt-jwt-modal-backdrop')).not.toBeVisible()
+      await expect(page.locator('.gt-modal-backdrop')).toBeVisible()
+    })
+
+    test('non-JWT header values are not clickable', async ({ devtoolsPanel: page }) => {
+      const contentTypeCell = page.locator('.gt-headers-table td', { hasText: 'application/json' })
+      await expect(contentTypeCell.locator('.gt-jwt-link')).toHaveCount(0)
     })
   })
 })
