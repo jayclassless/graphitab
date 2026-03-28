@@ -53,7 +53,10 @@ export function RequestModal({ request, onClose, onPrev, onNext }: Props) {
           <div className="gt-modal-header-top">
             {request.batchedOperations ? (
               <div className="gt-modal-batch-nav">
-                <OpTypeBadge type={request.batchedOperations[selectedOpIndex].operationType} />
+                <OpTypeBadge
+                  type={request.batchedOperations[selectedOpIndex].operationType}
+                  persisted={request.batchedOperations[selectedOpIndex].persisted}
+                />
                 <select
                   className="gt-modal-title-select"
                   value={selectedOpIndex}
@@ -85,7 +88,7 @@ export function RequestModal({ request, onClose, onPrev, onNext }: Props) {
               </div>
             ) : (
               <span className="gt-modal-title">
-                <OpTypeBadge type={request.operationType} />
+                <OpTypeBadge type={request.operationType} persisted={request.persisted} />
                 {request.operationName}
               </span>
             )}

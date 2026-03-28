@@ -6,6 +6,7 @@ import {
   extractOperationInfo,
   extractQueryAndVariables,
   extractBatchedOperations,
+  hasPersistedQuery,
 } from './har'
 import type { HAREntry, GraphQLRequest } from './har'
 
@@ -23,6 +24,7 @@ export function useGraphQLRequests(autoClear: boolean): {
       if (!isGraphQLEntry(entry)) return
       const { operationName, operationType } = extractOperationInfo(entry)
       const { query, variables, extensions } = extractQueryAndVariables(entry)
+      const persisted = hasPersistedQuery(entry) || undefined
       const responseText = await new Promise<string>((resolve) => {
         entry.getContent((content, encoding) => {
           if (encoding === 'base64') {
@@ -59,6 +61,7 @@ export function useGraphQLRequests(autoClear: boolean): {
           response: responseText || undefined,
           responseHeaders: entry.response.headers,
           batchedOperations,
+          persisted,
         },
       ])
     }

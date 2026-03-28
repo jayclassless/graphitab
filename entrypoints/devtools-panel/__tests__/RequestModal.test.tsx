@@ -70,6 +70,16 @@ describe('RequestModal', () => {
     expect(screen.getByText('MyQuery')).toBeInTheDocument()
   })
 
+  it('shows persisted indicator on badge for APQ requests', () => {
+    renderModal(makeRequest({ persisted: true }))
+    expect(screen.getByText('Q')).toHaveClass('gt-op-badge--persisted')
+  })
+
+  it('does not show persisted indicator on badge for non-APQ requests', () => {
+    renderModal(makeRequest())
+    expect(screen.getByText('Q')).not.toHaveClass('gt-op-badge--persisted')
+  })
+
   describe('metadata bar', () => {
     it('displays the HTTP method', () => {
       renderModal(makeRequest({ method: 'POST' }))
@@ -316,6 +326,27 @@ describe('RequestModal', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Previous operation' }))
       const select = screen.getByRole('combobox', { name: 'Select operation' }) as HTMLSelectElement
       expect(select.value).toBe('0')
+    })
+
+    it('shows persisted indicator on badge for APQ batch operation', () => {
+      renderModal(
+        makeBatchRequest({
+          batchedOperations: [
+            {
+              operationName: 'GetHero',
+              operationType: 'query',
+              query: 'query GetHero { hero { name } }',
+              persisted: true,
+            },
+            {
+              operationName: 'GetVillain',
+              operationType: 'query',
+              query: 'query GetVillain { villain { name } }',
+            },
+          ],
+        })
+      )
+      expect(screen.getByText('Q')).toHaveClass('gt-op-badge--persisted')
     })
 
     it('resets to first operation when a new request is opened', () => {

@@ -161,4 +161,14 @@ describe('RequestRow', () => {
     expect(onClick).toHaveBeenCalledOnce()
     expect(onClick).toHaveBeenCalledWith(req)
   })
+
+  it('shows persisted indicator on badge for APQ requests', () => {
+    renderRow(makeRequest({ persisted: true }))
+    expect(screen.getByText('Q')).toHaveClass('gt-op-badge--persisted')
+  })
+
+  it('does not show persisted indicator on badge for non-APQ requests', () => {
+    renderRow(makeRequest())
+    expect(screen.getByText('Q')).not.toHaveClass('gt-op-badge--persisted')
+  })
 })

@@ -34,7 +34,7 @@ export function RequestRow({
       }}
     >
       <div title={req.operationName}>
-        <OpTypeBadge type={req.operationType} />
+        <OpTypeBadge type={req.operationType} persisted={req.persisted} />
         {req.operationName}
         {req.batchedOperations && req.batchedOperations.length > 1 && (
           <span className="gt-batch-extra-count">+{req.batchedOperations.length - 1}</span>

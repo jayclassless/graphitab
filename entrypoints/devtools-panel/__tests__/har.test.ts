@@ -6,6 +6,7 @@ import {
   extractQueryAndVariables,
   extractBatchedOperations,
   buildCurlCommand,
+  hasPersistedQuery,
 } from '../har'
 import type { HAREntry, GraphQLRequest } from '../har'
 
@@ -1000,5 +1001,266 @@ describe('extractBatchedOperations', () => {
   it('returns empty array when body is not an array', () => {
     const entry = makeEntry()
     expect(extractBatchedOperations(entry, undefined)).toEqual([])
+  })
+})
+
+const APQ_HASH = 'ecf4edb46db40b5132295c0291d62fb65d6759a9eedfa4d5d612dd5ec54a6b38'
+const APQ_EXTENSIONS = { persistedQuery: { version: 1, sha256Hash: APQ_HASH } }
+
+function makeApqEntry(overrides: Partial<HAREntry['request']> = {}): HAREntry {
+  return makeEntry({
+    request: {
+      method: 'POST',
+      url: 'https://example.com/graphql',
+      headers: [{ name: 'content-type', value: 'application/json' }],
+      postData: {
+        text: JSON.stringify({ extensions: APQ_EXTENSIONS }),
+      },
+      ...overrides,
+    },
+  })
+}
+
+describe('hasPersistedQuery', () => {
+  it('POST with extensions.persistedQuery.sha256Hash → true', () => {
+    expect(hasPersistedQuery(makeApqEntry())).toBe(true)
+  })
+
+  it('POST with query + extensions.persistedQuery → true', () => {
+    const entry = makeApqEntry({
+      postData: {
+        text: JSON.stringify({ query: '{ hero }', extensions: APQ_EXTENSIONS }),
+      },
+    })
+    expect(hasPersistedQuery(entry)).toBe(true)
+  })
+
+  it('POST without persistedQuery extension → false', () => {
+    expect(hasPersistedQuery(makeEntry())).toBe(false)
+  })
+
+  it('POST with extensions but no persistedQuery → false', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: JSON.stringify({ query: '{ hero }', extensions: { tracing: true } }) },
+      },
+    })
+    expect(hasPersistedQuery(entry)).toBe(false)
+  })
+
+  it('GET with extensions param containing persistedQuery → true', () => {
+    const extensions = encodeURIComponent(JSON.stringify(APQ_EXTENSIONS))
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?extensions=${extensions}`,
+        headers: [],
+      },
+    })
+    expect(hasPersistedQuery(entry)).toBe(true)
+  })
+
+  it('GET without extensions param → false', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: 'https://example.com/graphql?query=%7B%20hero%20%7D',
+        headers: [],
+      },
+    })
+    expect(hasPersistedQuery(entry)).toBe(false)
+  })
+
+  it('batch POST where some items have persistedQuery → true', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([{ query: '{ hero }' }, { extensions: APQ_EXTENSIONS }]),
+        },
+      },
+    })
+    expect(hasPersistedQuery(entry)).toBe(true)
+  })
+})
+
+describe('isGraphQLEntry — APQ', () => {
+  it('POST with only extensions.persistedQuery (no query) → true', () => {
+    expect(isGraphQLEntry(makeApqEntry())).toBe(true)
+  })
+
+  it('POST with query + extensions.persistedQuery → true', () => {
+    const entry = makeApqEntry({
+      postData: {
+        text: JSON.stringify({ query: '{ hero }', extensions: APQ_EXTENSIONS }),
+      },
+    })
+    expect(isGraphQLEntry(entry)).toBe(true)
+  })
+
+  it('GET with only extensions param containing persistedQuery → true', () => {
+    const extensions = encodeURIComponent(JSON.stringify(APQ_EXTENSIONS))
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?extensions=${extensions}`,
+        headers: [],
+      },
+    })
+    expect(isGraphQLEntry(entry)).toBe(true)
+  })
+
+  it('batch where items have APQ extensions instead of query → true', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([{ extensions: APQ_EXTENSIONS }, { query: '{ hero }' }]),
+        },
+      },
+    })
+    expect(isGraphQLEntry(entry)).toBe(true)
+  })
+})
+
+describe('extractOperationInfo — APQ', () => {
+  it('POST hash-only → returns sha256Hash as operationName, query type', () => {
+    expect(extractOperationInfo(makeApqEntry())).toEqual({
+      operationName: APQ_HASH,
+      operationType: 'query',
+    })
+  })
+
+  it('POST with query + APQ → uses parsed query name (not hash)', () => {
+    const entry = makeApqEntry({
+      postData: {
+        text: JSON.stringify({
+          query: 'query GetHero { hero { name } }',
+          extensions: APQ_EXTENSIONS,
+        }),
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: 'GetHero',
+      operationType: 'query',
+    })
+  })
+
+  it('GET hash-only → returns sha256Hash as operationName', () => {
+    const extensions = encodeURIComponent(JSON.stringify(APQ_EXTENSIONS))
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?extensions=${extensions}`,
+        headers: [],
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: APQ_HASH,
+      operationType: 'query',
+    })
+  })
+
+  it('batch with hash-only first item → uses hash as name, batch type', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([{ extensions: APQ_EXTENSIONS }, { query: '{ hero }' }]),
+        },
+      },
+    })
+    expect(extractOperationInfo(entry)).toEqual({
+      operationName: APQ_HASH,
+      operationType: 'batch',
+    })
+  })
+})
+
+describe('extractQueryAndVariables — APQ', () => {
+  it('POST hash-only → empty query, extensions populated', () => {
+    const result = extractQueryAndVariables(makeApqEntry())
+    expect(result.query).toBe('')
+    expect(result.extensions).toBe(JSON.stringify(APQ_EXTENSIONS, null, 2))
+  })
+
+  it('POST hash-only with variables → empty query, variables and extensions populated', () => {
+    const entry = makeApqEntry({
+      postData: {
+        text: JSON.stringify({
+          variables: { id: '1' },
+          extensions: APQ_EXTENSIONS,
+        }),
+      },
+    })
+    const result = extractQueryAndVariables(entry)
+    expect(result.query).toBe('')
+    expect(result.variables).toBe('{\n  "id": "1"\n}')
+    expect(result.extensions).toBe(JSON.stringify(APQ_EXTENSIONS, null, 2))
+  })
+
+  it('GET hash-only → empty query, extensions populated', () => {
+    const extensions = encodeURIComponent(JSON.stringify(APQ_EXTENSIONS))
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: `https://example.com/graphql?extensions=${extensions}`,
+        headers: [],
+      },
+    })
+    const result = extractQueryAndVariables(entry)
+    expect(result.query).toBe('')
+    expect(result.extensions).toBe(JSON.stringify(APQ_EXTENSIONS, null, 2))
+  })
+})
+
+describe('extractBatchedOperations — APQ', () => {
+  it('sets persisted on items with persistedQuery extension', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: {
+          text: JSON.stringify([{ query: '{ hero }' }, { extensions: APQ_EXTENSIONS }]),
+        },
+      },
+    })
+    const ops = extractBatchedOperations(entry, undefined)
+    expect(ops[0].persisted).toBeUndefined()
+    expect(ops[1].persisted).toBe(true)
+    expect(ops[1].operationName).toBe(APQ_HASH)
+    expect(ops[1].query).toBe('')
+  })
+})
+
+describe('buildCurlCommand — APQ', () => {
+  it('hash-only request → body has extensions but no query key', () => {
+    const request: GraphQLRequest = {
+      id: '1',
+      operationName: APQ_HASH,
+      operationType: 'query',
+      status: 200,
+      size: 512,
+      time: 123,
+      url: 'https://api.example.com/graphql',
+      method: 'POST',
+      headers: [{ name: 'content-type', value: 'application/json' }],
+      query: '',
+      extensions: JSON.stringify(APQ_EXTENSIONS),
+      persisted: true,
+    }
+    const cmd = buildCurlCommand(request)
+    expect(cmd).toContain(`--data-raw '{"extensions":${JSON.stringify(APQ_EXTENSIONS)}}'`)
+    expect(cmd).not.toContain('"query"')
   })
 })

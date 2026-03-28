@@ -25,6 +25,7 @@ export type BatchedOperation = {
   variables?: string
   extensions?: string
   response?: string
+  persisted?: boolean
 }
 
 export type GraphQLRequest = {
@@ -44,6 +45,48 @@ export type GraphQLRequest = {
   response?: string
   responseHeaders?: Array<{ name: string; value: string }>
   batchedOperations?: BatchedOperation[]
+  persisted?: boolean
+}
+
+function hasPersistedQueryExtension(extensions: unknown): boolean {
+  return (
+    typeof extensions === 'object' &&
+    extensions !== null &&
+    typeof (extensions as Record<string, unknown>).persistedQuery === 'object' &&
+    (extensions as Record<string, unknown>).persistedQuery !== null &&
+    typeof (extensions as Record<string, Record<string, unknown>>).persistedQuery.sha256Hash ===
+      'string'
+  )
+}
+
+function isGraphQLItem(item: Record<string, unknown>): boolean {
+  return typeof item.query === 'string' || hasPersistedQueryExtension(item.extensions)
+}
+
+export function hasPersistedQuery(entry: HAREntry): boolean {
+  const { method, url, postData } = entry.request
+
+  if (method === 'POST' && postData?.text) {
+    try {
+      const body = JSON.parse(postData.text)
+      if (Array.isArray(body))
+        return body.some((item) => hasPersistedQueryExtension(item?.extensions))
+      return hasPersistedQueryExtension(body.extensions)
+    } catch {
+      return false
+    }
+  }
+
+  if (method === 'GET') {
+    try {
+      const extensionsParam = new URL(url).searchParams.get('extensions')
+      if (extensionsParam) return hasPersistedQueryExtension(JSON.parse(extensionsParam))
+    } catch {
+      return false
+    }
+  }
+
+  return false
 }
 
 export function isGraphQLEntry(entry: HAREntry): boolean {
@@ -55,12 +98,8 @@ export function isGraphQLEntry(entry: HAREntry): boolean {
     if (!postData?.text) return false
     try {
       const body = JSON.parse(postData.text)
-      if (typeof body.query === 'string') return true
-      if (
-        Array.isArray(body) &&
-        body.length > 0 &&
-        body.every((item) => typeof item?.query === 'string')
-      )
+      if (isGraphQLItem(body)) return true
+      if (Array.isArray(body) && body.length > 0 && body.every((item) => isGraphQLItem(item)))
         return true
       return false
     } catch {
@@ -70,7 +109,11 @@ export function isGraphQLEntry(entry: HAREntry): boolean {
 
   if (method === 'GET') {
     try {
-      return new URL(url).searchParams.has('query')
+      const params = new URL(url).searchParams
+      if (params.has('query')) return true
+      const extensionsParam = params.get('extensions')
+      if (extensionsParam) return hasPersistedQueryExtension(JSON.parse(extensionsParam))
+      return false
     } catch {
       return false
     }
@@ -85,22 +128,27 @@ export type QueryAndVariables = {
   extensions?: string
 }
 
+function extractPostBodyFields(body: Record<string, unknown>): QueryAndVariables {
+  const query = typeof body.query === 'string' ? body.query : ''
+  const variables =
+    body.variables !== null && typeof body.variables === 'object'
+      ? JSON.stringify(body.variables, null, 2)
+      : undefined
+  const extensions =
+    body.extensions !== null && typeof body.extensions === 'object'
+      ? JSON.stringify(body.extensions, null, 2)
+      : undefined
+  return { query, variables, extensions }
+}
+
 export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
   const { method, url, postData } = entry.request
 
   if (method === 'POST' && postData?.text) {
     try {
       const body = JSON.parse(postData.text)
-      if (typeof body.query === 'string') {
-        const variables =
-          body.variables !== null && typeof body.variables === 'object'
-            ? JSON.stringify(body.variables, null, 2)
-            : undefined
-        const extensions =
-          body.extensions !== null && typeof body.extensions === 'object'
-            ? JSON.stringify(body.extensions, null, 2)
-            : undefined
-        return { query: body.query, variables, extensions }
+      if (typeof body.query === 'string' || hasPersistedQueryExtension(body.extensions)) {
+        return extractPostBodyFields(body)
       }
     } catch {
       // fall through
@@ -111,9 +159,10 @@ export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
     try {
       const params = new URL(url).searchParams
       const query = params.get('query')
-      if (query) {
-        const variablesParam = params.get('variables')
+      const extensionsParam = params.get('extensions')
+      if (query || extensionsParam) {
         let variables: string | undefined
+        const variablesParam = params.get('variables')
         if (variablesParam) {
           try {
             variables = JSON.stringify(JSON.parse(variablesParam), null, 2)
@@ -121,7 +170,6 @@ export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
             // not valid JSON, skip
           }
         }
-        const extensionsParam = params.get('extensions')
         let extensions: string | undefined
         if (extensionsParam) {
           try {
@@ -130,7 +178,7 @@ export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
             // not valid JSON, skip
           }
         }
-        return { query, variables, extensions }
+        return { query: query ?? '', variables, extensions }
       }
     } catch {
       // fall through
@@ -143,6 +191,12 @@ export function extractQueryAndVariables(entry: HAREntry): QueryAndVariables {
 export type OperationInfo = {
   operationName: string
   operationType: OperationType
+}
+
+function operationInfoFromPersistedQuery(extensions: unknown): OperationInfo | null {
+  if (!hasPersistedQueryExtension(extensions)) return null
+  const hash = (extensions as Record<string, Record<string, string>>).persistedQuery.sha256Hash
+  return { operationName: hash, operationType: 'query' }
 }
 
 export function extractOperationInfo(entry: HAREntry): OperationInfo {
@@ -160,13 +214,18 @@ export function extractOperationInfo(entry: HAREntry): OperationInfo {
       }
       if (Array.isArray(body) && body.length > 0) {
         const first = body[0]
-        const info = parseOperation(typeof first?.query === 'string' ? first.query : '')
+        const firstQuery = typeof first?.query === 'string' ? first.query : ''
+        const info = firstQuery
+          ? parseOperation(firstQuery)
+          : (operationInfoFromPersistedQuery(first?.extensions) ?? parseOperation(''))
         const opName =
           typeof first?.operationName === 'string' && first.operationName.trim()
             ? first.operationName.trim()
             : info.operationName
         return { operationName: opName, operationType: 'batch' }
       }
+      const apqInfo = operationInfoFromPersistedQuery(body.extensions)
+      if (apqInfo) return apqInfo
     } catch {
       // fall through
     }
@@ -183,6 +242,11 @@ export function extractOperationInfo(entry: HAREntry): OperationInfo {
           return { operationName: opName.trim(), operationType: info.operationType }
         }
         return info
+      }
+      const extensionsParam = params.get('extensions')
+      if (extensionsParam) {
+        const apqInfo = operationInfoFromPersistedQuery(JSON.parse(extensionsParam))
+        if (apqInfo) return apqInfo
       }
     } catch {
       // fall through
@@ -213,7 +277,10 @@ export function extractBatchedOperations(
     }
 
     return body.map((item, i) => {
-      const info = parseOperation(typeof item?.query === 'string' ? item.query : '')
+      const itemQuery = typeof item?.query === 'string' ? item.query : ''
+      const info = itemQuery
+        ? parseOperation(itemQuery)
+        : (operationInfoFromPersistedQuery(item?.extensions) ?? parseOperation(''))
       const opName =
         typeof item?.operationName === 'string' && item.operationName.trim()
           ? item.operationName.trim()
@@ -228,13 +295,15 @@ export function extractBatchedOperations(
           : undefined
       const response =
         responseArray?.[i] !== undefined ? JSON.stringify(responseArray[i], null, 2) : undefined
+      const persisted = hasPersistedQueryExtension(item?.extensions) || undefined
       return {
         operationName: opName,
         operationType: info.operationType as Exclude<OperationType, 'batch'>,
-        query: typeof item?.query === 'string' ? item.query : '',
+        query: itemQuery,
         variables,
         extensions,
         response,
+        persisted,
       }
     })
   } catch {
@@ -282,7 +351,8 @@ export function buildCurlCommand(request: GraphQLRequest): string {
     if (request.rawBody) {
       parts.push(`--data-raw ${shellEscape(request.rawBody)}`)
     } else {
-      const body: Record<string, unknown> = { query: request.query }
+      const body: Record<string, unknown> = {}
+      if (request.query) body.query = request.query
       if (request.variables) {
         try {
           body.variables = JSON.parse(request.variables)

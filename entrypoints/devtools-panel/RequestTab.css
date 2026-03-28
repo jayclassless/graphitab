@@ -10,3 +10,10 @@
 .gt-raw-body-toggle {
   margin-left: auto;
 }
+
+.gt-persisted-hash {
+  margin: 0;
+  color: hsl(var(--color-neutral));
+  font-style: italic;
+  font-size: var(--font-size-body);
+}

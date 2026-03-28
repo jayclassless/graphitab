@@ -71,24 +71,33 @@ export function RequestTab({ request }: Props) {
         <>
           <section className="gt-request-section">
             <h3 className="gt-headers-section-title">
-              Query
-              <button
-                className={`gt-raw-toggle${showRaw ? ' gt-raw-toggle--active' : ''}`}
-                title="Display original, unformatted value"
-                onClick={() => setShowRaw((v) => !v)}
-              >
-                Raw
-              </button>
-              <CopyButton text={displayedQuery} title="Copy query" />
+              {request.persisted && !request.query ? 'Persisted Query (hash only)' : 'Query'}
+              {request.query && (
+                <button
+                  className={`gt-raw-toggle${showRaw ? ' gt-raw-toggle--active' : ''}`}
+                  title="Display original, unformatted value"
+                  onClick={() => setShowRaw((v) => !v)}
+                >
+                  Raw
+                </button>
+              )}
+              {request.query && <CopyButton text={displayedQuery} title="Copy query" />}
               {rawBodyToggle}
             </h3>
-            <pre className="gt-query-block">
-              {showRaw ? (
-                <code>{request.query}</code>
-              ) : (
-                <code dangerouslySetInnerHTML={{ __html: highlightedQuery }} />
-              )}
-            </pre>
+            {request.query ? (
+              <pre className="gt-query-block">
+                {showRaw ? (
+                  <code>{request.query}</code>
+                ) : (
+                  <code dangerouslySetInnerHTML={{ __html: highlightedQuery }} />
+                )}
+              </pre>
+            ) : (
+              <p className="gt-persisted-hash">
+                No query body — the server resolves this request via the persisted query hash in
+                extensions.
+              </p>
+            )}
           </section>
 
           {request.variables && !(parsedVariables && Object.keys(parsedVariables).length === 0) && (

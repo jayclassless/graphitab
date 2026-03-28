@@ -33,3 +33,18 @@
 .gt-op-badge--batch {
   background-color: #b8860b;
 }
+
+.gt-op-badge--persisted {
+  position: relative;
+}
+
+.gt-op-badge--persisted::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+}

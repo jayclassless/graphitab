@@ -3,6 +3,7 @@
 ## 0.3.0 (UNRELEASED)
 
 - Reworked network requests to resolve CORS issues in Firefox.
+- Added support for Automatic Persisted Queries (APQ) in the DevTools panel.
 
 ## 0.2.0 (2026-03-22)
 

@@ -244,6 +244,32 @@ describe('RequestTab', () => {
     })
   })
 
+  describe('Persisted Query (hash only)', () => {
+    it('shows "Persisted Query (hash only)" heading when persisted and no query', () => {
+      render(<RequestTab request={makeRequest({ query: '', persisted: true })} />)
+      expect(screen.getByText('Persisted Query (hash only)')).toBeInTheDocument()
+    })
+
+    it('shows hash-only explanation text when persisted and no query', () => {
+      render(<RequestTab request={makeRequest({ query: '', persisted: true })} />)
+      expect(
+        screen.getByText(/No query body — the server resolves this request/)
+      ).toBeInTheDocument()
+    })
+
+    it('does not show Raw toggle or Copy button when query is empty', () => {
+      render(<RequestTab request={makeRequest({ query: '', persisted: true })} />)
+      expect(screen.queryByRole('button', { name: 'Raw' })).not.toBeInTheDocument()
+      expect(screen.queryByTitle('Copy query')).not.toBeInTheDocument()
+    })
+
+    it('shows normal "Query" heading when persisted but query is present', () => {
+      render(<RequestTab request={makeRequest({ query: '{ hero }', persisted: true })} />)
+      expect(screen.getByText('Query')).toBeInTheDocument()
+      expect(screen.queryByText('Persisted Query (hash only)')).not.toBeInTheDocument()
+    })
+  })
+
   describe('Raw Body toggle', () => {
     const title = 'Toggle between parsed and raw body view'
 
