@@ -27,7 +27,7 @@ vi.mock('react-window', () => ({
 vi.mock('../useGraphQLRequests', () => ({ useGraphQLRequests: vi.fn() }))
 
 import App from '../App'
-import type { GraphQLRequest } from '../har'
+import type { GraphQLRequest, TableEntry, NavigationDivider } from '../har'
 import { useGraphQLRequests } from '../useGraphQLRequests'
 
 const mockUseGraphQLRequests = vi.mocked(useGraphQLRequests)
@@ -48,8 +48,17 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
   }
 }
 
-function mockHook(requests: GraphQLRequest[], clear = vi.fn()) {
-  mockUseGraphQLRequests.mockReturnValue({ requests, clear })
+function makeDivider(overrides: Partial<NavigationDivider> = {}): NavigationDivider {
+  return {
+    kind: 'navigation-divider',
+    id: 'nav-1',
+    url: 'https://example.com/page',
+    ...overrides,
+  }
+}
+
+function mockHook(entries: TableEntry[], clear = vi.fn()) {
+  mockUseGraphQLRequests.mockReturnValue({ entries, clear })
 }
 
 describe('DevTools Panel App', () => {
@@ -510,6 +519,86 @@ describe('DevTools Panel App', () => {
       fireEvent.click(rows[1])
       fireEvent.keyDown(document, { key: 'ArrowLeft' })
       expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'GetHero')
+    })
+
+    it('modal prev/next skips over navigation dividers', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeDivider({ id: 'nav-1', url: 'https://example.com' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[0])
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'GetHero')
+      fireEvent.click(screen.getByRole('button', { name: 'Next request' }))
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'CreateUser')
+      fireEvent.click(screen.getByRole('button', { name: 'Previous request' }))
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'GetHero')
+    })
+
+    it('prev is disabled when only dividers precede the current request', () => {
+      mockHook([
+        makeDivider({ id: 'nav-1', url: 'https://example.com' }),
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[0])
+      expect(screen.getByRole('button', { name: 'Previous request' })).toBeDisabled()
+    })
+
+    it('next is disabled when only dividers follow the current request', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeDivider({ id: 'nav-1', url: 'https://example.com' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      fireEvent.click(rows[0])
+      expect(screen.getByRole('button', { name: 'Next request' })).toBeDisabled()
+    })
+  })
+
+  describe('Navigation dividers', () => {
+    it('renders a navigation divider row with the navigated URL', () => {
+      mockHook([makeDivider({ url: 'https://example.com/page' })])
+      render(<App />)
+      expect(screen.getByText('https://example.com/page')).toBeInTheDocument()
+      expect(document.querySelector('.gt-navigation-divider')).toBeInTheDocument()
+    })
+
+    it('clicking a navigation divider does not open a modal', () => {
+      mockHook([makeDivider()])
+      render(<App />)
+      const divider = document.querySelector('.gt-navigation-divider') as HTMLElement
+      fireEvent.click(divider)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('navigation dividers are shown regardless of operation type filters', async () => {
+      mockHook([
+        makeRequest({ id: '1', operationType: 'query', operationName: 'GetHero' }),
+        makeDivider({ id: 'nav-1', url: 'https://example.com' }),
+      ])
+      render(<App />)
+      await userEvent.click(screen.getByRole('button', { name: 'Query' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Mutation' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Batch' }))
+      expect(document.querySelector('.gt-navigation-divider')).toBeInTheDocument()
+    })
+
+    it('dividers interspersed with requests render in correct order', () => {
+      mockHook([
+        makeRequest({ id: '1', operationName: 'GetHero' }),
+        makeDivider({ id: 'nav-1', url: 'https://example.com/page2' }),
+        makeRequest({ id: '2', operationName: 'CreateUser' }),
+      ])
+      render(<App />)
+      const rows = document.querySelectorAll('.gt-network-row')
+      const dividers = document.querySelectorAll('.gt-navigation-divider')
+      expect(rows).toHaveLength(2)
+      expect(dividers).toHaveLength(1)
     })
   })
 })

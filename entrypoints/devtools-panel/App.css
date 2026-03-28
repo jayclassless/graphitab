@@ -169,3 +169,26 @@ body {
 .gt-type-filter-btn--active {
   opacity: 1;
 }
+
+.gt-navigation-divider {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  background-color: hsla(var(--color-warning), var(--alpha-background-light));
+  border-bottom: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  cursor: default;
+}
+
+.gt-navigation-divider-label {
+  padding: 0 var(--px-8);
+  font-size: var(--font-size-body);
+  color: hsla(var(--color-neutral), var(--alpha-secondary));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.gt-navigation-divider-url {
+  color: hsl(var(--color-neutral));
+}

@@ -5,6 +5,7 @@ import 'graphiql/style.css'
 import './App.css'
 import { ContextMenu } from './ContextMenu'
 import type { GraphQLRequest } from './har'
+import { isNavigationDivider } from './har'
 import { RequestModal } from './RequestModal'
 import { RequestRow, ROW_HEIGHT, type RowData } from './RequestRow'
 import { useDevtoolsSettings, FILTER_TYPES } from './useDevtoolsSettings'
@@ -15,12 +16,13 @@ const MIN_COL_WIDTH = 40
 export default function App() {
   const { preserveLog, setPreserveLog, activeTypes, toggleType, columnWidths, setColumnWidths } =
     useDevtoolsSettings()
-  const { requests, clear } = useGraphQLRequests(!preserveLog)
+  const { entries, clear } = useGraphQLRequests(!preserveLog)
 
-  const visible = requests.filter(
-    (r) =>
-      !FILTER_TYPES.includes(r.operationType as (typeof FILTER_TYPES)[number]) ||
-      activeTypes.has(r.operationType)
+  const visible = entries.filter(
+    (entry) =>
+      isNavigationDivider(entry) ||
+      !FILTER_TYPES.includes(entry.operationType as (typeof FILTER_TYPES)[number]) ||
+      activeTypes.has(entry.operationType)
   )
 
   const [contextMenu, setContextMenu] = useState<{
@@ -178,16 +180,30 @@ export default function App() {
       {selectedRequest &&
         (() => {
           const selectedIndex = visible.findIndex((r) => r.id === selectedRequest.id)
+          const prevIndex = (() => {
+            for (let i = selectedIndex - 1; i >= 0; i--) {
+              if (!isNavigationDivider(visible[i])) return i
+            }
+            return -1
+          })()
+          const nextIndex = (() => {
+            for (let i = selectedIndex + 1; i < visible.length; i++) {
+              if (!isNavigationDivider(visible[i])) return i
+            }
+            return -1
+          })()
           return (
             <RequestModal
               request={selectedRequest}
               onClose={() => setSelectedRequest(null)}
               onPrev={
-                selectedIndex > 0 ? () => setSelectedRequest(visible[selectedIndex - 1]) : undefined
+                prevIndex >= 0
+                  ? () => setSelectedRequest(visible[prevIndex] as GraphQLRequest)
+                  : undefined
               }
               onNext={
-                selectedIndex < visible.length - 1
-                  ? () => setSelectedRequest(visible[selectedIndex + 1])
+                nextIndex >= 0
+                  ? () => setSelectedRequest(visible[nextIndex] as GraphQLRequest)
                   : undefined
               }
             />

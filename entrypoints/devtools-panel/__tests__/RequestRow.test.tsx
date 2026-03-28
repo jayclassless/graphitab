@@ -2,7 +2,7 @@ import { cleanup, render, screen, fireEvent } from '@testing-library/react'
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
-import type { GraphQLRequest } from '../har'
+import type { GraphQLRequest, NavigationDivider } from '../har'
 import { RequestRow } from '../RequestRow'
 
 function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
@@ -170,5 +170,71 @@ describe('RequestRow', () => {
   it('does not show persisted indicator on badge for non-APQ requests', () => {
     renderRow(makeRequest())
     expect(screen.getByText('Q')).not.toHaveClass('gt-op-badge--persisted')
+  })
+
+  describe('Navigation divider', () => {
+    function makeDivider(overrides: Partial<NavigationDivider> = {}): NavigationDivider {
+      return {
+        kind: 'navigation-divider',
+        id: 'nav-1',
+        url: 'https://example.com/page',
+        ...overrides,
+      }
+    }
+
+    function renderDivider(
+      divider: NavigationDivider = makeDivider(),
+      onContextMenu = vi.fn(),
+      onClick = vi.fn()
+    ) {
+      return render(
+        <RequestRow
+          ariaAttributes={ariaAttributes}
+          index={0}
+          style={{}}
+          visible={[divider]}
+          onContextMenu={onContextMenu}
+          onClick={onClick}
+        />
+      )
+    }
+
+    it('renders with the navigation divider class', () => {
+      renderDivider()
+      expect(document.querySelector('.gt-navigation-divider')).toBeInTheDocument()
+    })
+
+    it('displays "Navigated to" with the URL', () => {
+      renderDivider(makeDivider({ url: 'https://example.com/new-page' }))
+      expect(screen.getByText('https://example.com/new-page')).toBeInTheDocument()
+      expect(screen.getByText(/Navigated to/)).toBeInTheDocument()
+    })
+
+    it('does not render as a grid row', () => {
+      renderDivider()
+      expect(document.querySelector('.gt-network-row')).not.toBeInTheDocument()
+    })
+
+    it('does not call onClick when clicked', () => {
+      const onClick = vi.fn()
+      renderDivider(makeDivider(), vi.fn(), onClick)
+      const divider = document.querySelector('.gt-navigation-divider') as HTMLElement
+      fireEvent.click(divider)
+      expect(onClick).not.toHaveBeenCalled()
+    })
+
+    it('does not call onContextMenu when right-clicked', () => {
+      const onContextMenu = vi.fn()
+      renderDivider(makeDivider(), onContextMenu)
+      const divider = document.querySelector('.gt-navigation-divider') as HTMLElement
+      fireEvent.contextMenu(divider)
+      expect(onContextMenu).not.toHaveBeenCalled()
+    })
+
+    it('has a title attribute with the full URL', () => {
+      renderDivider(makeDivider({ url: 'https://example.com/very-long-url' }))
+      const label = document.querySelector('.gt-navigation-divider-label') as HTMLElement
+      expect(label).toHaveAttribute('title', 'https://example.com/very-long-url')
+    })
   })
 })

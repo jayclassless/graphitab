@@ -48,6 +48,18 @@ export type GraphQLRequest = {
   persisted?: boolean
 }
 
+export type NavigationDivider = {
+  kind: 'navigation-divider'
+  id: string
+  url: string
+}
+
+export type TableEntry = GraphQLRequest | NavigationDivider
+
+export function isNavigationDivider(entry: TableEntry): entry is NavigationDivider {
+  return 'kind' in entry && entry.kind === 'navigation-divider'
+}
+
 function hasPersistedQueryExtension(extensions: unknown): boolean {
   return (
     typeof extensions === 'object' &&

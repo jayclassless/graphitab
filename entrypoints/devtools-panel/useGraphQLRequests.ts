@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { browser } from 'wxt/browser'
 
 import {
@@ -8,18 +8,18 @@ import {
   extractBatchedOperations,
   hasPersistedQuery,
 } from './har'
-import type { HAREntry, GraphQLRequest } from './har'
+import type { HAREntry, TableEntry } from './har'
 
 export function useGraphQLRequests(autoClear: boolean): {
-  requests: GraphQLRequest[]
+  entries: TableEntry[]
   clear: () => void
 } {
-  const [requests, setRequests] = useState<GraphQLRequest[]>([])
+  const [entries, setEntries] = useState<TableEntry[]>([])
+  const counter = useRef(0)
 
-  const clear = useCallback(() => setRequests([]), [])
+  const clear = useCallback(() => setEntries([]), [])
 
   useEffect(() => {
-    let counter = 0
     async function handleRequest(entry: HAREntry) {
       if (!isGraphQLEntry(entry)) return
       const { operationName, operationType } = extractOperationInfo(entry)
@@ -42,10 +42,10 @@ export function useGraphQLRequests(autoClear: boolean): {
         operationType === 'batch'
           ? extractBatchedOperations(entry, responseText || undefined)
           : undefined
-      setRequests((prev) => [
+      setEntries((prev) => [
         ...prev,
         {
-          id: String(++counter),
+          id: String(++counter.current),
           operationName,
           operationType,
           status: entry.response.status,
@@ -72,13 +72,19 @@ export function useGraphQLRequests(autoClear: boolean): {
   }, [])
 
   useEffect(() => {
-    if (!autoClear) return
-    function handleNavigated() {
-      setRequests([])
+    function handleNavigated(url: string) {
+      if (autoClear) {
+        setEntries([])
+      } else {
+        setEntries((prev) => [
+          ...prev,
+          { kind: 'navigation-divider', id: String(++counter.current), url },
+        ])
+      }
     }
     browser.devtools.network.onNavigated.addListener(handleNavigated)
     return () => browser.devtools.network.onNavigated.removeListener(handleNavigated)
   }, [autoClear])
 
-  return { requests, clear }
+  return { entries, clear }
 }
