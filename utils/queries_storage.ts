@@ -10,12 +10,19 @@ export type SavedQuery = {
   query: string
   variables?: string
   headers?: string
+  extensions?: string
   createdAt: number
 }
 
 export type SavedQueriesStorage = {
   getAll(): Promise<SavedQuery[]>
-  create(name: string, query: string, variables?: string, headers?: string): Promise<SavedQuery[]>
+  create(
+    name: string,
+    query: string,
+    variables?: string,
+    headers?: string,
+    extensions?: string
+  ): Promise<SavedQuery[]>
   save(query: SavedQuery): Promise<SavedQuery[]>
   remove(id: string): Promise<SavedQuery[]>
   clear(): Promise<void>
@@ -55,7 +62,8 @@ export function createSavedQueriesStorage(profileId: string): SavedQueriesStorag
       name: string,
       query: string,
       variables?: string,
-      headers?: string
+      headers?: string,
+      extensions?: string
     ): Promise<SavedQuery[]> {
       const newQuery = {
         id: uuid(),
@@ -63,6 +71,7 @@ export function createSavedQueriesStorage(profileId: string): SavedQueriesStorag
         query,
         variables,
         headers,
+        extensions,
         createdAt: Date.now(),
       }
 

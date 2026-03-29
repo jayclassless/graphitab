@@ -114,6 +114,115 @@ test.describe('Profile headers', () => {
   })
 })
 
+test.describe('Extensions', () => {
+  test.beforeEach(async ({ page, extensionId }) => {
+    await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)
+    await expect(page.locator('.graphiql-execute-button')).toBeVisible({
+      timeout: 15_000,
+    })
+  })
+
+  test('Extensions toolbar button opens modal', async ({ page }) => {
+    await page.getByLabel('Extensions').click()
+    await expect(page.locator('.extensions-modal')).toBeVisible()
+    await expect(page.locator('.extensions-modal-textarea')).toBeVisible()
+  })
+
+  test('modal rejects invalid JSON', async ({ page }) => {
+    await page.getByLabel('Extensions').click()
+    await page.locator('.extensions-modal-textarea').fill('not valid json')
+    await page.locator('.extensions-modal-actions').getByText('Save').click()
+    await expect(page.getByText('Extensions must be a JSON object')).toBeVisible()
+    // Modal should still be open
+    await expect(page.locator('.extensions-modal')).toBeVisible()
+  })
+
+  test('modal rejects non-object JSON', async ({ page }) => {
+    await page.getByLabel('Extensions').click()
+    await page.locator('.extensions-modal-textarea').fill('[1, 2, 3]')
+    await page.locator('.extensions-modal-actions').getByText('Save').click()
+    await expect(page.getByText('Extensions must be a JSON object')).toBeVisible()
+  })
+
+  test('modal saves valid JSON and shows indicator', async ({ page }) => {
+    // No indicator before setting extensions
+    await expect(page.locator('.extensions-toolbar-indicator')).not.toBeVisible()
+
+    await page.getByLabel('Extensions').click()
+    await page.locator('.extensions-modal-textarea').fill('{"persistedQuery": true}')
+    await page.locator('.extensions-modal-actions').getByText('Save').click()
+
+    // Modal should close
+    await expect(page.locator('.extensions-modal')).not.toBeVisible()
+    // Indicator should appear
+    await expect(page.locator('.extensions-toolbar-indicator')).toBeVisible()
+  })
+
+  test('extensions are included in executed request', async ({ page }) => {
+    // Set extensions
+    await page.getByLabel('Extensions').click()
+    await page
+      .locator('.extensions-modal-textarea')
+      .fill('{"persistedQuery": {"version": 1, "sha256Hash": "abc123"}}')
+    await page.locator('.extensions-modal-actions').getByText('Save').click()
+
+    // Intercept the request to verify extensions are in the body.
+    // Filter to only capture our user query, not introspection requests.
+    let capturedBody = ''
+    const requestCaptured = new Promise<void>((resolve) => {
+      page.context().route('https://countries.trevorblades.com/graphql', async (route) => {
+        const body = route.request().postData() || ''
+        if (body.includes('IntrospectionQuery')) {
+          await route.continue()
+          return
+        }
+        capturedBody = body
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: { countries: [{ name: 'Test' }] } }),
+        })
+        resolve()
+      })
+    })
+
+    // Type and execute a query
+    const queryEditor = page.locator('.graphiql-query-editor .monaco-editor textarea')
+    await queryEditor.click({ force: true })
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('{ countries { name } }', { delay: 10 })
+    await page.locator('.graphiql-execute-button').click()
+
+    await requestCaptured
+    const parsed = JSON.parse(capturedBody)
+    expect(parsed.extensions).toEqual({
+      persistedQuery: { version: 1, sha256Hash: 'abc123' },
+    })
+  })
+
+  test('clearing extensions removes the indicator', async ({ page }) => {
+    // Set extensions
+    await page.getByLabel('Extensions').click()
+    await page.locator('.extensions-modal-textarea').fill('{"key": "value"}')
+    await page.locator('.extensions-modal-actions').getByText('Save').click()
+    await expect(page.locator('.extensions-toolbar-indicator')).toBeVisible()
+
+    // Clear extensions
+    await page.getByLabel('Extensions').click()
+    await page.locator('.extensions-modal-textarea').fill('')
+    await page.locator('.extensions-modal-actions').getByText('Save').click()
+    await expect(page.locator('.extensions-toolbar-indicator')).not.toBeVisible()
+  })
+
+  test('modal closes on Escape key', async ({ page }) => {
+    await page.getByLabel('Extensions').click()
+    await expect(page.locator('.extensions-modal')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.extensions-modal')).not.toBeVisible()
+  })
+})
+
 test.describe('Saved Queries', () => {
   test.beforeEach(async ({ page, extensionId }) => {
     await page.goto(`chrome-extension://${extensionId}/graphiql.html?profile=countries`)

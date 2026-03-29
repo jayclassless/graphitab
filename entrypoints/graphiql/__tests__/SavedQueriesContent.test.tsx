@@ -39,6 +39,9 @@ vi.mock('~/components/ConfirmDeleteButton.css', () => ({}))
 
 import SavedQueriesContent from '../SavedQueriesContent'
 
+const mockExtensionsRef = { current: '{"ext": true}' }
+const mockOnExtensionsChange = vi.fn()
+
 const savedQueries = [
   {
     id: '1',
@@ -46,6 +49,7 @@ const savedQueries = [
     query: '{ b }',
     variables: '{"x":1}',
     headers: '{"H":"v"}',
+    extensions: '{"persistedQuery": "abc"}',
     createdAt: 2000,
   },
   { id: '2', name: 'Alpha Query', query: '{ a }', createdAt: 1000 },
@@ -73,12 +77,19 @@ describe('SavedQueriesContent', () => {
     mocks.operations = '{ hero { name } }'
     mocks.variables = '{"id": 1}'
     mocks.headers = '{"Auth": "Bearer"}'
+    mockExtensionsRef.current = '{"ext": true}'
   })
 
   async function renderContent(storage?: SavedQueriesStorage) {
     const s = storage ?? createMockStorage()
     const user = userEvent.setup()
-    render(<SavedQueriesContent storage={s} />)
+    render(
+      <SavedQueriesContent
+        storage={s}
+        extensionsRef={mockExtensionsRef}
+        onExtensionsChange={mockOnExtensionsChange}
+      />
+    )
     await waitFor(() => {
       expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
     })
@@ -131,7 +142,8 @@ describe('SavedQueriesContent', () => {
         'My Query',
         '{ hero { name } }',
         '{"id": 1}',
-        '{"Auth": "Bearer"}'
+        '{"Auth": "Bearer"}',
+        '{"ext": true}'
       )
     })
 
@@ -176,7 +188,8 @@ describe('SavedQueriesContent', () => {
         'My Query',
         '{ hero { name } }',
         '{"id": 1}',
-        '{"Auth": "Bearer"}'
+        '{"Auth": "Bearer"}',
+        '{"ext": true}'
       )
     })
 
@@ -201,14 +214,16 @@ describe('SavedQueriesContent', () => {
       expect(mocks.handleEditOperations).toHaveBeenCalledWith('{ b }')
       expect(mocks.handleEditVariables).toHaveBeenCalledWith('{"x":1}')
       expect(mocks.handleEditHeaders).toHaveBeenCalledWith('{"H":"v"}')
+      expect(mockOnExtensionsChange).toHaveBeenCalledWith('{"persistedQuery": "abc"}')
     })
 
-    it('loads empty string for undefined variables and headers', async () => {
+    it('loads empty string for undefined variables, headers, and extensions', async () => {
       const { user } = await renderContent()
       await user.click(screen.getByText('Alpha Query'))
       expect(mocks.handleEditOperations).toHaveBeenCalledWith('{ a }')
       expect(mocks.handleEditVariables).toHaveBeenCalledWith('')
       expect(mocks.handleEditHeaders).toHaveBeenCalledWith('')
+      expect(mockOnExtensionsChange).toHaveBeenCalledWith('')
     })
   })
 
@@ -219,23 +234,25 @@ describe('SavedQueriesContent', () => {
       expect(mocks.addTab).toHaveBeenCalled()
       // Editor content is set after a setTimeout(0)
       await waitFor(() => {
-        // Alpha Query is sorted first (no variables/headers)
+        // Alpha Query is sorted first (no variables/headers/extensions)
         expect(mocks.handleEditOperations).toHaveBeenCalledWith('{ a }')
         expect(mocks.handleEditVariables).toHaveBeenCalledWith('')
         expect(mocks.handleEditHeaders).toHaveBeenCalledWith('')
+        expect(mockOnExtensionsChange).toHaveBeenCalledWith('')
       })
     })
 
-    it('opens query with variables and headers in new tab', async () => {
+    it('opens query with variables, headers, and extensions in new tab', async () => {
       const { user } = await renderContent()
       await user.click(screen.getAllByTitle('Open in new tab')[1])
       expect(mocks.addTab).toHaveBeenCalled()
       // Editor content is set after a setTimeout(0)
       await waitFor(() => {
-        // Bravo Query has variables and headers
+        // Bravo Query has variables, headers, and extensions
         expect(mocks.handleEditOperations).toHaveBeenCalledWith('{ b }')
         expect(mocks.handleEditVariables).toHaveBeenCalledWith('{"x":1}')
         expect(mocks.handleEditHeaders).toHaveBeenCalledWith('{"H":"v"}')
+        expect(mockOnExtensionsChange).toHaveBeenCalledWith('{"persistedQuery": "abc"}')
       })
     })
   })
@@ -340,7 +357,13 @@ describe('SavedQueriesContent', () => {
       const mockUnwatch = vi.fn()
       storage.watch = vi.fn(() => mockUnwatch)
 
-      const { unmount } = render(<SavedQueriesContent storage={storage} />)
+      const { unmount } = render(
+        <SavedQueriesContent
+          storage={storage}
+          extensionsRef={mockExtensionsRef}
+          onExtensionsChange={mockOnExtensionsChange}
+        />
+      )
       await waitFor(() => {
         expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
       })
@@ -354,7 +377,13 @@ describe('SavedQueriesContent', () => {
     it('shows error when loading queries fails', async () => {
       const storage = createMockStorage()
       storage.getAll = vi.fn().mockRejectedValue(new Error('storage error'))
-      render(<SavedQueriesContent storage={storage} />)
+      render(
+        <SavedQueriesContent
+          storage={storage}
+          extensionsRef={mockExtensionsRef}
+          onExtensionsChange={mockOnExtensionsChange}
+        />
+      )
       await waitFor(() => {
         expect(screen.getByText('Failed to load saved queries')).toBeInTheDocument()
       })

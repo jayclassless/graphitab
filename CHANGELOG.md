@@ -7,6 +7,8 @@
 - Added a divider to the request list in the DevTools panel when a navigation
   occurs during Preserve Log mode.
 - Added an inspector in the DevTools panel for JWT tokens in headers.
+- Added a toolbar function (the icons to the right of the query) in GraphiQL
+  that allows you to specify an `extensions` payload to include in the query.
 
 ## 0.2.0 (2026-03-22)
 

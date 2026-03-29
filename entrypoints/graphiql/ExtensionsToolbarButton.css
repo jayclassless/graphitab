@@ -1,0 +1,15 @@
+.extensions-toolbar-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.extensions-toolbar-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: hsl(var(--color-primary));
+  pointer-events: none;
+}

@@ -16,7 +16,17 @@ import './SavedQueriesContent.css'
 type SortField = 'name' | 'createdAt'
 type SortDirection = 'asc' | 'desc'
 
-export default function SavedQueriesContent({ storage }: { storage: SavedQueriesStorage }) {
+type SavedQueriesContentProps = {
+  storage: SavedQueriesStorage
+  extensionsRef: React.RefObject<string>
+  onExtensionsChange: (value: string) => void
+}
+
+export default function SavedQueriesContent({
+  storage,
+  extensionsRef,
+  onExtensionsChange,
+}: SavedQueriesContentProps) {
   const [operationsString, handleEditOperations] = useOptimisticState(useOperationsEditorState())
   const [variablesString, handleEditVariables] = useOptimisticState(useVariablesEditorState())
   const [headersString, handleEditHeaders] = useOptimisticState(useHeadersEditorState())
@@ -61,7 +71,13 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
     setError(null)
 
     try {
-      await storage.create(name, operationsString, variablesString, headersString)
+      await storage.create(
+        name,
+        operationsString,
+        variablesString,
+        headersString,
+        extensionsRef.current
+      )
       setQueryName('')
     } catch {
       setError('Failed to save query')
@@ -72,6 +88,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
     handleEditOperations(saved.query)
     handleEditVariables(saved.variables || '')
     handleEditHeaders(saved.headers || '')
+    onExtensionsChange(saved.extensions || '')
   }
 
   const handleOpenInNewTab = (saved: SavedQuery) => {
@@ -80,6 +97,7 @@ export default function SavedQueriesContent({ storage }: { storage: SavedQueries
       handleEditOperations(saved.query)
       handleEditVariables(saved.variables || '')
       handleEditHeaders(saved.headers || '')
+      onExtensionsChange(saved.extensions || '')
     }, 0)
   }
 
