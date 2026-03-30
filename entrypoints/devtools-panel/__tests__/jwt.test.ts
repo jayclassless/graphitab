@@ -45,6 +45,11 @@ describe('isJwt', () => {
   it('returns false for an empty string', () => {
     expect(isJwt('')).toBe(false)
   })
+
+  it('returns false when jwtDecode throws', () => {
+    // A three-part base64url string that passes the regex but has an invalid header segment
+    expect(isJwt('not-valid-base64.payload.sig')).toBe(false)
+  })
 })
 
 describe('extractJwt', () => {

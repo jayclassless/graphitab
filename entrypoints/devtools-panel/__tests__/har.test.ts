@@ -1002,6 +1002,18 @@ describe('extractBatchedOperations', () => {
     const entry = makeEntry()
     expect(extractBatchedOperations(entry, undefined)).toEqual([])
   })
+
+  it('returns empty array when body JSON is unparseable', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: 'not valid json{{{' },
+      },
+    })
+    expect(extractBatchedOperations(entry, undefined)).toEqual([])
+  })
 })
 
 const APQ_HASH = 'ecf4edb46db40b5132295c0291d62fb65d6759a9eedfa4d5d612dd5ec54a6b38'
@@ -1068,6 +1080,29 @@ describe('hasPersistedQuery', () => {
       request: {
         method: 'GET',
         url: 'https://example.com/graphql?query=%7B%20hero%20%7D',
+        headers: [],
+      },
+    })
+    expect(hasPersistedQuery(entry)).toBe(false)
+  })
+
+  it('POST with invalid JSON body → false', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'POST',
+        url: 'https://example.com/graphql',
+        headers: [{ name: 'content-type', value: 'application/json' }],
+        postData: { text: 'not valid json{{{' },
+      },
+    })
+    expect(hasPersistedQuery(entry)).toBe(false)
+  })
+
+  it('GET with invalid extensions JSON → false', () => {
+    const entry = makeEntry({
+      request: {
+        method: 'GET',
+        url: 'https://example.com/graphql?extensions=not-json',
         headers: [],
       },
     })

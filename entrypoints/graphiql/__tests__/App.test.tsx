@@ -501,6 +501,137 @@ describe('GraphiQL App', () => {
     expect(document.querySelector('.extensions-toolbar-indicator')).toBeInTheDocument()
   })
 
+  it('calls baseFetcher without extensions when none are set', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    const fetcherProp = mockGraphiQL.mock.calls.at(-1)?.[0]?.fetcher as (
+      params: Record<string, unknown>,
+      opts?: Record<string, unknown>
+    ) => unknown
+    mockBaseFetcher.mockClear()
+    await fetcherProp({ query: '{ test }' }, { option: true })
+    expect(mockBaseFetcher).toHaveBeenCalledWith({ query: '{ test }' }, { option: true })
+  })
+
+  it('removes extensions from map when cleared on active tab', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    // Set active tab
+    const onTabChange = mockGraphiQL.mock.calls.at(-1)?.[0]?.onTabChange as (tabsState: {
+      tabs: { id: string }[]
+      activeTabIndex: number
+    }) => void
+    act(() => {
+      onTabChange({ tabs: [{ id: 'tab-1' }], activeTabIndex: 0 })
+    })
+
+    // Set extensions on the tab
+    await act(async () => {
+      screen.getByLabelText('Extensions').click()
+    })
+    const textarea = screen.getByRole('textbox')
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )!.set!
+      setter.call(textarea, '{"key": "val"}')
+      textarea.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      screen.getByText('Save').click()
+    })
+    expect(document.querySelector('.extensions-toolbar-indicator')).toBeInTheDocument()
+
+    // Now clear extensions
+    await act(async () => {
+      screen.getByLabelText('Extensions').click()
+    })
+    const textarea2 = screen.getByRole('textbox')
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )!.set!
+      setter.call(textarea2, '')
+      textarea2.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      screen.getByText('Save').click()
+    })
+    expect(document.querySelector('.extensions-toolbar-indicator')).not.toBeInTheDocument()
+
+    // Switch away and back — should still be empty
+    act(() => {
+      onTabChange({ tabs: [{ id: 'tab-1' }, { id: 'tab-2' }], activeTabIndex: 1 })
+    })
+    act(() => {
+      onTabChange({ tabs: [{ id: 'tab-1' }, { id: 'tab-2' }], activeTabIndex: 0 })
+    })
+    expect(document.querySelector('.extensions-toolbar-indicator')).not.toBeInTheDocument()
+  })
+
+  it('adopts initial extensions when first tab id becomes known', async () => {
+    window.history.pushState({}, '', '?profile=test-id')
+    mockGetProfile.mockResolvedValue(mockProfile)
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+    })
+
+    // Set extensions before any tab change (no active tab id yet)
+    await act(async () => {
+      screen.getByLabelText('Extensions').click()
+    })
+    const textarea = screen.getByRole('textbox')
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )!.set!
+      setter.call(textarea, '{"initial": true}')
+      textarea.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      screen.getByText('Save').click()
+    })
+    expect(document.querySelector('.extensions-toolbar-indicator')).toBeInTheDocument()
+
+    // First tab change adopts the existing extensions
+    const onTabChange = mockGraphiQL.mock.calls.at(-1)?.[0]?.onTabChange as (tabsState: {
+      tabs: { id: string }[]
+      activeTabIndex: number
+    }) => void
+    act(() => {
+      onTabChange({ tabs: [{ id: 'tab-A' }], activeTabIndex: 0 })
+    })
+
+    // Extensions should still be active after tab adoption
+    expect(document.querySelector('.extensions-toolbar-indicator')).toBeInTheDocument()
+
+    // Switch to a new tab — should not have extensions
+    act(() => {
+      onTabChange({ tabs: [{ id: 'tab-A' }, { id: 'tab-B' }], activeTabIndex: 1 })
+    })
+    expect(document.querySelector('.extensions-toolbar-indicator')).not.toBeInTheDocument()
+
+    // Switch back — extensions should be preserved on tab-A
+    act(() => {
+      onTabChange({ tabs: [{ id: 'tab-A' }, { id: 'tab-B' }], activeTabIndex: 0 })
+    })
+    expect(document.querySelector('.extensions-toolbar-indicator')).toBeInTheDocument()
+  })
+
   it('clears deleted state after restore', async () => {
     window.history.pushState({}, '', '?profile=test-id')
     mockGetProfile.mockResolvedValue(mockProfile)
