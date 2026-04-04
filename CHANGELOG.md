@@ -1,6 +1,6 @@
 # GraphiTab Change Log
 
-## 0.3.0 (UNRELEASED)
+## 0.3.0 (2026-04-04)
 
 - Reworked network requests to resolve CORS issues in Firefox.
 - Added support for Automatic Persisted Queries (APQ) in the DevTools panel.

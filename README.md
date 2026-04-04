@@ -1,16 +1,20 @@
 # GraphiTab
 
-A browser extension (for both [Chrome](https://chromewebstore.google.com/detail/graphitab/cdnbebabankmpeacfgnobmgogoedpmgo) & [Firefox](https://addons.mozilla.org/en-US/firefox/addon/graphitab/)) that gives you a full [GraphiQL](https://github.com/graphql/graphiql) IDE in a new tab. Click the extension icon to manage your GraphQL endpoint profiles, then open any profile to get an interactive GraphiQL session. Includes the GraphQL Explorer plugin that can help you generate queries by navigating the schema, as well as a custom plugin that allows you to save queries for reuse in the future.
+A browser extension for [Chrome](https://chromewebstore.google.com/detail/graphitab/cdnbebabankmpeacfgnobmgogoedpmgo) and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/graphitab/) that puts a full [GraphiQL](https://github.com/graphql/graphiql) IDE at your fingertips — no server setup, no hosted playground, just open a new tab and start querying.
+
+**GraphiQL IDE**: Create endpoint profiles with custom headers, then launch any profile into an interactive GraphiQL session powered by the Monaco editor. Browse the schema with the built-in Explorer plugin to discover types and fields, compose queries visually, and save the ones you want to keep with the Saved Queries plugin so you're not rewriting the same request next sprint.
 
 ![Screenshot](docs/graphitab_screenshot1.png)
 
-This extension also includes a Developer Tools panel that monitors GraphQL network requests and allows you to inspect them (very much inspired by the [GraphQL Network Inspector](https://github.com/warrenday/graphql-network-inspector) extension). It supports both traditional POST- and GET-style requests, as well as Batched requests.
+**DevTools Network Inspector**: A dedicated Developer Tools panel captures GraphQL traffic in real time. Inspect operation names, headers, request bodies, and responses at a glance in a resizable grid. Supports POST, GET, and batched requests, with operation-type filtering and one-click copy-as-cURL for quick reproduction outside the browser.
 
 ![Screenshot](docs/graphitab_screenshot2.png)
 
 ![Screenshot](docs/graphitab_screenshot3.png)
 
 ![Screenshot](docs/graphitab_screenshot4.png)
+
+**No ads. No telemetry. No catch.**: GraphiTab collects zero data about you or your usage, contains no advertisements or donation prompts, and is completely open source under the MIT license.
 
 ## Prerequisites
 
