@@ -9,6 +9,8 @@ import { fakeBrowser } from 'wxt/testing/fake-browser'
 vi.mock('../App.css', () => ({}))
 vi.mock('../ContextMenu.css', () => ({}))
 vi.mock('../RequestModal.css', () => ({}))
+vi.mock('../ProfileNamePrompt.css', () => ({}))
+vi.mock('~/styles/shared.css', () => ({}))
 vi.mock('graphiql/style.css', () => ({}))
 vi.mock('react-window', () => ({
   List: (props: Record<string, unknown>) => {
@@ -25,10 +27,30 @@ vi.mock('react-window', () => ({
   },
 }))
 vi.mock('../useGraphQLRequests', () => ({ useGraphQLRequests: vi.fn() }))
+vi.mock('~/utils/profiles', () => ({
+  getAll: vi.fn(),
+  create: vi.fn(),
+}))
+vi.mock('~/utils/open_in_graphiql', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('~/utils/open_in_graphiql')>()
+  return {
+    ...actual,
+    storeInitialState: vi.fn().mockResolvedValue(undefined),
+    openGraphiQLTab: vi.fn().mockResolvedValue(undefined),
+  }
+})
+
+import { storeInitialState, openGraphiQLTab } from '~/utils/open_in_graphiql'
+import { getAll as getAllProfiles, create as createProfile } from '~/utils/profiles'
 
 import App from '../App'
 import type { GraphQLRequest, TableEntry, NavigationDivider } from '../har'
 import { useGraphQLRequests } from '../useGraphQLRequests'
+
+const mockGetAllProfiles = vi.mocked(getAllProfiles)
+const mockCreateProfile = vi.mocked(createProfile)
+const mockStoreInitialState = vi.mocked(storeInitialState)
+const mockOpenGraphiQLTab = vi.mocked(openGraphiQLTab)
 
 const mockUseGraphQLRequests = vi.mocked(useGraphQLRequests)
 
@@ -64,6 +86,10 @@ function mockHook(entries: TableEntry[], clear = vi.fn()) {
 describe('DevTools Panel App', () => {
   beforeEach(() => {
     fakeBrowser.reset()
+    mockGetAllProfiles.mockReset()
+    mockCreateProfile.mockReset()
+    mockStoreInitialState.mockReset().mockResolvedValue(undefined)
+    mockOpenGraphiQLTab.mockReset().mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -557,6 +583,164 @@ describe('DevTools Panel App', () => {
       const rows = document.querySelectorAll('.gt-network-row')
       fireEvent.click(rows[0])
       expect(screen.getByRole('button', { name: 'Next request' })).toBeDisabled()
+    })
+  })
+
+  describe('Open in GraphiQL', () => {
+    it('opens a GraphiQL tab directly when a matching profile exists', async () => {
+      const request = makeRequest({ url: 'https://api.example.com/graphql' })
+      mockHook([request])
+      mockGetAllProfiles.mockResolvedValue([
+        { id: 'prof-1', name: 'My API', url: 'https://api.example.com/graphql' },
+      ])
+      render(<App />)
+
+      // Right-click to open context menu
+      const row = document.querySelector('.gt-network-row') as HTMLElement
+      fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+      fireEvent.click(screen.getByText('Open in GraphiQL'))
+
+      await vi.waitFor(() => {
+        expect(mockStoreInitialState).toHaveBeenCalledWith(
+          'prof-1',
+          expect.objectContaining({
+            query: request.query,
+          })
+        )
+        expect(mockOpenGraphiQLTab).toHaveBeenCalledWith('prof-1')
+      })
+    })
+
+    it('shows ProfileNamePrompt when no matching profile exists', async () => {
+      const request = makeRequest({ url: 'https://unknown.example.com/graphql' })
+      mockHook([request])
+      mockGetAllProfiles.mockResolvedValue([])
+      render(<App />)
+
+      const row = document.querySelector('.gt-network-row') as HTMLElement
+      fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+      fireEvent.click(screen.getByText('Open in GraphiQL'))
+
+      await vi.waitFor(() => {
+        expect(screen.getByText('Create Profile')).toBeInTheDocument()
+        expect(document.querySelector('.gt-profile-prompt-url')).toHaveTextContent(
+          'https://unknown.example.com/graphql'
+        )
+      })
+    })
+
+    it('creates a profile and opens a tab when the prompt is submitted', async () => {
+      const user = userEvent.setup()
+      const request = makeRequest({ url: 'https://unknown.example.com/graphql' })
+      mockHook([request])
+      mockGetAllProfiles.mockResolvedValue([])
+      mockCreateProfile.mockResolvedValue({
+        id: 'new-prof',
+        name: 'New API',
+        url: 'https://unknown.example.com/graphql',
+      })
+      render(<App />)
+
+      const row = document.querySelector('.gt-network-row') as HTMLElement
+      fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+      fireEvent.click(screen.getByText('Open in GraphiQL'))
+
+      await vi.waitFor(() => {
+        expect(screen.getByText('Create Profile')).toBeInTheDocument()
+      })
+
+      await user.type(screen.getByPlaceholderText('Profile name...'), 'New API')
+      await user.click(screen.getByText('Create & Open'))
+
+      await vi.waitFor(() => {
+        expect(mockCreateProfile).toHaveBeenCalledWith(
+          'New API',
+          'https://unknown.example.com/graphql'
+        )
+        expect(mockStoreInitialState).toHaveBeenCalledWith(
+          'new-prof',
+          expect.objectContaining({
+            query: request.query,
+          })
+        )
+        expect(mockOpenGraphiQLTab).toHaveBeenCalledWith('new-prof')
+      })
+
+      // Prompt should be dismissed
+      expect(screen.queryByText('Create Profile')).not.toBeInTheDocument()
+    })
+
+    it('strips GraphQL query params from the URL shown in the profile prompt', async () => {
+      const request = makeRequest({
+        url: 'https://api.example.com/graphql?query=%7Bhero%7D&operationName=GetHero',
+        method: 'GET',
+      })
+      mockHook([request])
+      mockGetAllProfiles.mockResolvedValue([])
+      render(<App />)
+
+      const row = document.querySelector('.gt-network-row') as HTMLElement
+      fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+      fireEvent.click(screen.getByText('Open in GraphiQL'))
+
+      await vi.waitFor(() => {
+        expect(document.querySelector('.gt-profile-prompt-url')).toHaveTextContent(
+          'https://api.example.com/graphql'
+        )
+      })
+    })
+
+    it('creates a profile with GraphQL query params stripped from the URL', async () => {
+      const user = userEvent.setup()
+      const request = makeRequest({
+        url: 'https://api.example.com/graphql?query=%7Bhero%7D&variables=%7B%7D&token=abc',
+        method: 'GET',
+      })
+      mockHook([request])
+      mockGetAllProfiles.mockResolvedValue([])
+      mockCreateProfile.mockResolvedValue({
+        id: 'new-prof',
+        name: 'My API',
+        url: 'https://api.example.com/graphql?token=abc',
+      })
+      render(<App />)
+
+      const row = document.querySelector('.gt-network-row') as HTMLElement
+      fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+      fireEvent.click(screen.getByText('Open in GraphiQL'))
+
+      await vi.waitFor(() => {
+        expect(screen.getByText('Create Profile')).toBeInTheDocument()
+      })
+
+      await user.type(screen.getByPlaceholderText('Profile name...'), 'My API')
+      await user.click(screen.getByText('Create & Open'))
+
+      await vi.waitFor(() => {
+        expect(mockCreateProfile).toHaveBeenCalledWith(
+          'My API',
+          'https://api.example.com/graphql?token=abc'
+        )
+      })
+    })
+
+    it('dismisses the prompt when Cancel is clicked', async () => {
+      const user = userEvent.setup()
+      mockHook([makeRequest({ url: 'https://unknown.example.com/graphql' })])
+      mockGetAllProfiles.mockResolvedValue([])
+      render(<App />)
+
+      const row = document.querySelector('.gt-network-row') as HTMLElement
+      fireEvent.contextMenu(row, { clientX: 100, clientY: 200 })
+      fireEvent.click(screen.getByText('Open in GraphiQL'))
+
+      await vi.waitFor(() => {
+        expect(screen.getByText('Create Profile')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByText('Cancel'))
+      expect(screen.queryByText('Create Profile')).not.toBeInTheDocument()
+      expect(mockCreateProfile).not.toHaveBeenCalled()
     })
   })
 

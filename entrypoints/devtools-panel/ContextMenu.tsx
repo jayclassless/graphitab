@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 
+import { canOpenInGraphiQL } from '~/utils/open_in_graphiql'
+
 import './ContextMenu.css'
 import { buildCurlCommand } from './har'
 import type { GraphQLRequest } from './har'
@@ -9,6 +11,7 @@ type Props = {
   y: number
   request: GraphQLRequest
   onClose: () => void
+  onOpenInGraphiQL?: (request: GraphQLRequest) => void
 }
 
 function prettyJson(value: string): string {
@@ -26,7 +29,7 @@ function copyAndClose(text: string, onClose: () => void) {
     .finally(onClose)
 }
 
-export function ContextMenu({ x, y, request, onClose }: Props) {
+export function ContextMenu({ x, y, request, onClose, onOpenInGraphiQL }: Props) {
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -100,6 +103,20 @@ export function ContextMenu({ x, y, request, onClose }: Props) {
       >
         Copy as cURL
       </button>
+      {onOpenInGraphiQL && canOpenInGraphiQL(request) && (
+        <>
+          <button
+            className="gt-context-menu-item"
+            role="menuitem"
+            onClick={() => {
+              onOpenInGraphiQL(request)
+              onClose()
+            }}
+          >
+            Open in GraphiQL
+          </button>
+        </>
+      )}
     </div>
   )
 }

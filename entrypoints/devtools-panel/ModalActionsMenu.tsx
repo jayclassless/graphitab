@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 
+import { canOpenInGraphiQL } from '~/utils/open_in_graphiql'
+
 import './ModalActionsMenu.css'
 import { buildCurlCommand } from './har'
 import type { GraphQLRequest } from './har'
@@ -7,6 +9,7 @@ import type { GraphQLRequest } from './har'
 type Props = {
   request: GraphQLRequest
   onClose: () => void
+  onOpenInGraphiQL?: (request: GraphQLRequest) => void
 }
 
 function copyAndClose(text: string, onClose: () => void) {
@@ -36,7 +39,7 @@ function requestBody(request: GraphQLRequest): string {
   return JSON.stringify(body, null, 2)
 }
 
-export function ModalActionsMenu({ request, onClose }: Props) {
+export function ModalActionsMenu({ request, onClose, onOpenInGraphiQL }: Props) {
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -90,6 +93,20 @@ export function ModalActionsMenu({ request, onClose }: Props) {
       >
         Copy as cURL
       </button>
+      {onOpenInGraphiQL && canOpenInGraphiQL(request) && (
+        <>
+          <button
+            className="gt-modal-actions-menu-item"
+            role="menuitem"
+            onClick={() => {
+              onOpenInGraphiQL(request)
+              onClose()
+            }}
+          >
+            Open in GraphiQL
+          </button>
+        </>
+      )}
     </div>
   )
 }

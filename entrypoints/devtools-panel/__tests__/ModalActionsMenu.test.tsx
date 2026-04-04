@@ -25,8 +25,14 @@ function makeRequest(overrides: Partial<GraphQLRequest> = {}): GraphQLRequest {
   }
 }
 
-function renderMenu(req: GraphQLRequest, onClose = vi.fn()) {
-  return render(<ModalActionsMenu request={req} onClose={onClose} />)
+function renderMenu(
+  req: GraphQLRequest,
+  onClose = vi.fn(),
+  onOpenInGraphiQL?: (request: GraphQLRequest) => void
+) {
+  return render(
+    <ModalActionsMenu request={req} onClose={onClose} onOpenInGraphiQL={onOpenInGraphiQL} />
+  )
 }
 
 describe('ModalActionsMenu', () => {
@@ -213,6 +219,50 @@ describe('ModalActionsMenu', () => {
       const menu = container.querySelector('.gt-modal-actions-menu') as HTMLElement
       fireEvent.mouseDown(menu, { button: 0 })
       expect(onClose).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Open in GraphiQL', () => {
+    it('is hidden when onOpenInGraphiQL is not provided', () => {
+      renderMenu(makeRequest())
+      expect(screen.queryByText('Open in GraphiQL')).not.toBeInTheDocument()
+    })
+
+    it('is shown for a normal query when onOpenInGraphiQL is provided', () => {
+      renderMenu(makeRequest(), vi.fn(), vi.fn())
+      expect(screen.getByText('Open in GraphiQL')).toBeInTheDocument()
+    })
+
+    it('is hidden for batch requests', () => {
+      renderMenu(
+        makeRequest({
+          operationType: 'batch',
+          batchedOperations: [{ operationName: 'A', operationType: 'query', query: '{ a }' }],
+        }),
+        vi.fn(),
+        vi.fn()
+      )
+      expect(screen.queryByText('Open in GraphiQL')).not.toBeInTheDocument()
+    })
+
+    it('is hidden for APQ requests without a query', () => {
+      renderMenu(makeRequest({ persisted: true, query: '' }), vi.fn(), vi.fn())
+      expect(screen.queryByText('Open in GraphiQL')).not.toBeInTheDocument()
+    })
+
+    it('is shown for APQ requests that include a query', () => {
+      renderMenu(makeRequest({ persisted: true }), vi.fn(), vi.fn())
+      expect(screen.getByText('Open in GraphiQL')).toBeInTheDocument()
+    })
+
+    it('calls onOpenInGraphiQL and onClose when clicked', () => {
+      const onClose = vi.fn()
+      const onOpenInGraphiQL = vi.fn()
+      const request = makeRequest()
+      renderMenu(request, onClose, onOpenInGraphiQL)
+      fireEvent.click(screen.getByText('Open in GraphiQL'))
+      expect(onOpenInGraphiQL).toHaveBeenCalledWith(request)
+      expect(onClose).toHaveBeenCalledOnce()
     })
   })
 })

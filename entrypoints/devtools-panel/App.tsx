@@ -1,11 +1,22 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import { List } from 'react-window'
 
+import {
+  buildInitialState,
+  findProfileByUrl,
+  stripGraphQLParams,
+  storeInitialState,
+  openGraphiQLTab,
+  type GraphiQLInitialState,
+} from '~/utils/open_in_graphiql'
+import { getAll as getAllProfiles, create as createProfile } from '~/utils/profiles'
+
 import 'graphiql/style.css'
 import './App.css'
 import { ContextMenu } from './ContextMenu'
 import type { GraphQLRequest } from './har'
 import { isNavigationDivider } from './har'
+import { ProfileNamePrompt } from './ProfileNamePrompt'
 import { RequestModal } from './RequestModal'
 import { RequestRow, ROW_HEIGHT, type RowData } from './RequestRow'
 import { useDevtoolsSettings, FILTER_TYPES } from './useDevtoolsSettings'
@@ -31,6 +42,31 @@ export default function App() {
     request: GraphQLRequest
   } | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<GraphQLRequest | null>(null)
+  const [profilePrompt, setProfilePrompt] = useState<{
+    url: string
+    state: GraphiQLInitialState
+  } | null>(null)
+
+  async function handleOpenInGraphiQL(request: GraphQLRequest) {
+    const state = buildInitialState(request)
+    const allProfiles = await getAllProfiles()
+    const match = findProfileByUrl(allProfiles, request.url)
+    if (match) {
+      await storeInitialState(match.id, state)
+      await openGraphiQLTab(match.id)
+    } else {
+      setProfilePrompt({ url: stripGraphQLParams(request.url), state })
+    }
+  }
+
+  async function handleProfilePromptConfirm(name: string) {
+    if (!profilePrompt) return
+    const { url, state } = profilePrompt
+    const newProfile = await createProfile(name, url)
+    setProfilePrompt(null)
+    await storeInitialState(newProfile.id, state)
+    await openGraphiQLTab(newProfile.id)
+  }
 
   const dragState = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null)
 
@@ -175,6 +211,7 @@ export default function App() {
           y={contextMenu.y}
           request={contextMenu.request}
           onClose={() => setContextMenu(null)}
+          onOpenInGraphiQL={handleOpenInGraphiQL}
         />
       )}
       {selectedRequest &&
@@ -196,6 +233,7 @@ export default function App() {
             <RequestModal
               request={selectedRequest}
               onClose={() => setSelectedRequest(null)}
+              onOpenInGraphiQL={handleOpenInGraphiQL}
               onPrev={
                 prevIndex >= 0
                   ? () => setSelectedRequest(visible[prevIndex] as GraphQLRequest)
@@ -209,6 +247,13 @@ export default function App() {
             />
           )
         })()}
+      {profilePrompt && (
+        <ProfileNamePrompt
+          url={profilePrompt.url}
+          onConfirm={handleProfilePromptConfirm}
+          onCancel={() => setProfilePrompt(null)}
+        />
+      )}
     </div>
   )
 }

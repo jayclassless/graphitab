@@ -1,0 +1,41 @@
+.gt-profile-prompt {
+  background: hsla(var(--color-base), 1);
+  border: 1px solid hsla(var(--color-neutral), var(--alpha-background-heavy));
+  border-radius: var(--border-radius-8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: var(--px-20);
+  width: 400px;
+  max-width: 90vw;
+}
+
+.gt-profile-prompt h3 {
+  margin: 0 0 var(--px-12);
+  color: hsl(var(--color-neutral));
+  font-size: 1rem;
+}
+
+.gt-profile-prompt-message {
+  color: hsla(var(--color-neutral), var(--alpha-secondary));
+  font-size: 0.85rem;
+  margin: 0 0 var(--px-4);
+}
+
+.gt-profile-prompt-url {
+  color: hsl(var(--color-neutral));
+  font-size: 0.85rem;
+  font-family: monospace;
+  word-break: break-all;
+  margin: 0 0 var(--px-12);
+}
+
+.gt-profile-prompt .gt-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: var(--px-12);
+}
+
+.gt-profile-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--px-8);
+}

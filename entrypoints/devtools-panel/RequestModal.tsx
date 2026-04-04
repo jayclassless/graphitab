@@ -17,11 +17,12 @@ type Props = {
   onClose: () => void
   onPrev?: () => void
   onNext?: () => void
+  onOpenInGraphiQL?: (request: GraphQLRequest) => void
 }
 
 const TABS: Tab[] = ['headers', 'request', 'response']
 
-export function RequestModal({ request, onClose, onPrev, onNext }: Props) {
+export function RequestModal({ request, onClose, onPrev, onNext, onOpenInGraphiQL }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('headers')
   const [selectedOpIndex, setSelectedOpIndex] = useState(0)
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
@@ -120,7 +121,11 @@ export function RequestModal({ request, onClose, onPrev, onNext }: Props) {
                   ⋮
                 </button>
                 {actionsMenuOpen && (
-                  <ModalActionsMenu request={request} onClose={() => setActionsMenuOpen(false)} />
+                  <ModalActionsMenu
+                    request={request}
+                    onClose={() => setActionsMenuOpen(false)}
+                    onOpenInGraphiQL={onOpenInGraphiQL}
+                  />
                 )}
               </div>
               <button className="gt-modal-close" onClick={onClose} aria-label="Close">

@@ -21,11 +21,16 @@ const mockCreateSavedQueriesStorage = vi.hoisted(() =>
 )
 
 const mockRestore = vi.hoisted(() => vi.fn())
+const mockConsumeInitialState = vi.hoisted(() => vi.fn())
 
 vi.mock('~/utils/profiles', () => ({
   get: mockGetProfile,
   watch: mockWatchProfiles,
   restore: mockRestore,
+}))
+
+vi.mock('~/utils/open_in_graphiql', () => ({
+  consumeInitialState: mockConsumeInitialState,
 }))
 
 vi.mock('~/utils/queries_storage', () => ({
@@ -109,11 +114,13 @@ describe('GraphiQL App', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockConsumeInitialState.mockResolvedValue(null)
   })
 
   it('shows loading state initially', () => {
     window.history.pushState({}, '', '?profile=test-id')
     mockGetProfile.mockReturnValue(new Promise(() => {}))
+    mockConsumeInitialState.mockReturnValue(new Promise(() => {}))
     render(<App />)
     expect(screen.getByText('Loading...')).toBeInTheDocument()
   })
@@ -630,6 +637,68 @@ describe('GraphiQL App', () => {
       onTabChange({ tabs: [{ id: 'tab-A' }, { id: 'tab-B' }], activeTabIndex: 0 })
     })
     expect(document.querySelector('.extensions-toolbar-indicator')).toBeInTheDocument()
+  })
+
+  describe('initial state from devtools', () => {
+    it('passes initialQuery/initialVariables/initialHeaders to GraphiQL when initial state exists', async () => {
+      window.history.pushState({}, '', '?profile=test-id')
+      mockGetProfile.mockResolvedValue(mockProfile)
+      mockConsumeInitialState.mockResolvedValue({
+        query: 'query { hero }',
+        variables: '{"id":"1"}',
+        headers: '{"Authorization":"Bearer token"}',
+        extensions: '{"foo":"bar"}',
+      })
+      render(<App />)
+      await waitFor(() => {
+        expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+      })
+
+      const props = mockGraphiQL.mock.calls.at(-1)?.[0]
+      expect(props?.initialQuery).toBe('query { hero }')
+      expect(props?.initialVariables).toBe('{"id":"1"}')
+      expect(props?.initialHeaders).toBe('{"Authorization":"Bearer token"}')
+    })
+
+    it('sets extensions from initial state', async () => {
+      window.history.pushState({}, '', '?profile=test-id')
+      mockGetProfile.mockResolvedValue(mockProfile)
+      mockConsumeInitialState.mockResolvedValue({
+        query: 'query { hero }',
+        extensions: '{"foo":"bar"}',
+      })
+      render(<App />)
+      await waitFor(() => {
+        expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+      })
+
+      // Extensions indicator should be shown
+      expect(document.querySelector('.extensions-toolbar-indicator')).toBeInTheDocument()
+    })
+
+    it('does not pass initial props to GraphiQL when no initial state', async () => {
+      window.history.pushState({}, '', '?profile=test-id')
+      mockGetProfile.mockResolvedValue(mockProfile)
+      mockConsumeInitialState.mockResolvedValue(null)
+      render(<App />)
+      await waitFor(() => {
+        expect(screen.getByTestId('graphiql')).toBeInTheDocument()
+      })
+
+      const props = mockGraphiQL.mock.calls.at(-1)?.[0]
+      expect(props?.initialQuery).toBeUndefined()
+      expect(props?.initialVariables).toBeUndefined()
+      expect(props?.initialHeaders).toBeUndefined()
+    })
+
+    it('calls consumeInitialState with the profile id', async () => {
+      window.history.pushState({}, '', '?profile=test-id')
+      mockGetProfile.mockResolvedValue(mockProfile)
+      render(<App />)
+      await waitFor(() => {
+        expect(mockConsumeInitialState).toHaveBeenCalledWith('test-id')
+      })
+    })
   })
 
   it('clears deleted state after restore', async () => {

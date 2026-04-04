@@ -9,6 +9,8 @@
 - Added an inspector in the DevTools panel for JWT tokens in headers.
 - Added a toolbar function (the icons to the right of the query) in GraphiQL
   that allows you to specify an `extensions` payload to include in the query.
+- Added the ability to open a query from the DevTools panel into a GraphiQL
+  tab.
 
 ## 0.2.0 (2026-03-22)
 

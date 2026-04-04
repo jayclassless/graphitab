@@ -5,6 +5,7 @@ import { GraphiQL } from 'graphiql'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import { backgroundFetch } from '~/utils/background_fetch'
+import { consumeInitialState, type GraphiQLInitialState } from '~/utils/open_in_graphiql'
 import { get as getProfile, watch as watchProfiles, type Profile } from '~/utils/profiles'
 import { createSavedQueriesStorage, type SavedQuery } from '~/utils/queries_storage'
 import { createGraphiQLSettingsStorage } from '~/utils/settings_storage'
@@ -66,6 +67,7 @@ export default function App() {
     null
   )
   const savedQueriesRef = useRef<SavedQuery[]>([])
+  const [initialState, setInitialState] = useState<GraphiQLInitialState | null>(null)
 
   const extensionsMapRef = useRef(new Map<string, string>())
   const activeTabIdRef = useRef('')
@@ -100,10 +102,17 @@ export default function App() {
 
   useEffect(() => {
     if (profileId) {
-      getProfile(profileId)
-        .then((p) => {
+      Promise.all([getProfile(profileId), consumeInitialState(profileId)])
+        .then(([p, state]) => {
           profileRef.current = p
           setProfile(p)
+          if (state) {
+            setInitialState(state)
+            if (state.extensions) {
+              extensionsRef.current = state.extensions
+              setExtensions(state.extensions)
+            }
+          }
           if (p) {
             createSavedQueriesStorage(p.id)
               .getAll()
@@ -202,6 +211,9 @@ export default function App() {
         storage={settingsStorage}
         plugins={plugins}
         onTabChange={handleTabChange}
+        initialQuery={initialState?.query}
+        initialVariables={initialState?.variables ?? undefined}
+        initialHeaders={initialState?.headers ?? undefined}
       >
         <GraphiQL.Toolbar>
           {({ prettify, copy, merge }) => (
